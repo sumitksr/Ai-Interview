@@ -1,21 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f8fb;
-  --foreground: #17202a;
+  color-scheme: dark;
+  --background: #05070d;
+  --foreground: #f4f7fb;
+  --surface: #0a0f1c;
+  --surface-2: #101827;
+  --surface-3: #172033;
+  --border: #263246;
+  --muted: #97a6ba;
+  --soft-text: #cbd6e4;
+  --accent: #2dd4bf;
+  --accent-strong: #14b8a6;
+  --accent-soft: rgba(45, 212, 191, 0.14);
+  --hot: #f97316;
+  --hot-strong: #ea580c;
+  --hot-soft: rgba(249, 115, 22, 0.15);
+  --cyan: #38bdf8;
+  --cyan-soft: rgba(56, 189, 248, 0.14);
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --background: #f5f7fb;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --surface-2: #eef3f8;
+  --surface-3: #e2e8f0;
+  --border: #d5deea;
+  --muted: #64748b;
+  --soft-text: #334155;
+  --accent: #0f766e;
+  --accent-strong: #115e59;
+  --accent-soft: rgba(15, 118, 110, 0.12);
+  --hot: #ea580c;
+  --hot-strong: #c2410c;
+  --hot-soft: rgba(234, 88, 12, 0.12);
+  --cyan: #0284c7;
+  --cyan-soft: rgba(2, 132, 199, 0.12);
+  --shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-panel: var(--surface-2);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-soft: var(--soft-text);
+  --color-accent: var(--accent);
+  --color-hot: var(--hot);
+  --color-cyan: var(--cyan);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
+  background:
+    linear-gradient(rgba(45, 212, 191, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
+    linear-gradient(135deg, var(--background) 0%, #080b14 52%, #0c111d 100%);
+  background-attachment: fixed;
+  background-size: 42px 42px, 42px 42px, auto;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+[data-theme="light"] body {
+  background:
+    linear-gradient(rgba(15, 118, 110, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2, 132, 199, 0.06) 1px, transparent 1px),
+    linear-gradient(135deg, var(--background) 0%, #edf3f8 52%, #f9fbfd 100%);
+  background-attachment: fixed;
+  background-size: 42px 42px, 42px 42px, auto;
 }
 
 input,
@@ -26,6 +86,171 @@ button {
 }
 
 ::selection {
-  background: #a7f3d0;
-  color: #0f172a;
+  background: var(--accent);
+  color: #041016;
+}
+
+.page-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.page-shell::before {
+  background:
+    linear-gradient(90deg, transparent 0 20%, var(--accent-soft) 20% 20.4%, transparent 20.4% 58%, var(--cyan-soft) 58% 58.4%, transparent 58.4%),
+    linear-gradient(180deg, transparent 0 28%, rgba(148, 163, 184, 0.08) 28% 28.3%, transparent 28.3% 64%, rgba(148, 163, 184, 0.06) 64% 64.3%, transparent 64.3%);
+  content: "";
+  inset: 0;
+  opacity: 0.72;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+
+.site-header {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.brand-mark {
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  box-shadow: 0 0 30px var(--accent-soft);
+  color: #041016;
+}
+
+.nav-cluster,
+.theme-toggle {
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  border: 1px solid var(--border);
+}
+
+.nav-link {
+  color: var(--muted);
+}
+
+.nav-link:hover,
+.nav-link-active {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.theme-toggle {
+  color: var(--soft-text);
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--foreground);
+}
+
+.btn-primary,
+.btn-hot,
+.btn-secondary {
+  align-items: center;
+  border-radius: 0.5rem;
+  display: inline-flex;
+  font-size: 0.875rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.25rem;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  color: #041016;
+  box-shadow: 0 0 34px var(--accent-soft);
+}
+
+.btn-hot {
+  background: linear-gradient(135deg, var(--hot), #fb7185);
+  color: white;
+  box-shadow: 0 0 34px var(--hot-soft);
+}
+
+.btn-secondary {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  border: 1px solid var(--border);
+  color: var(--soft-text);
+}
+
+.btn-primary:hover,
+.btn-hot:hover,
+.btn-secondary:hover {
+  transform: translateY(-1px);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--foreground);
+}
+
+.tech-card {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--surface) 94%, transparent), color-mix(in srgb, var(--surface-2) 92%, transparent));
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.tech-card-subtle {
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  border: 1px solid var(--border);
+}
+
+.accent-pill {
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--accent);
+}
+
+.hot-pill {
+  background: var(--hot-soft);
+  border: 1px solid color-mix(in srgb, var(--hot) 40%, var(--border));
+  color: var(--hot);
+}
+
+.muted-text {
+  color: var(--muted);
+}
+
+.soft-text {
+  color: var(--soft-text);
+}
+
+.title-text {
+  color: var(--foreground);
+}
+
+.input-control {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--foreground);
+  outline: none;
+  padding: 0.75rem 1rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  width: 100%;
+}
+
+.input-control::placeholder {
+  color: var(--muted);
+}
+
+.input-control:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.console-line {
+  background: linear-gradient(90deg, var(--accent-soft), transparent);
+  border-left: 2px solid var(--accent);
+  color: var(--soft-text);
+}
+
+.signal-bar {
+  background: linear-gradient(180deg, var(--cyan), var(--accent));
+  box-shadow: 0 0 18px var(--accent-soft);
 }

@@ -12,69 +12,66 @@ export default function Contact() {
   }
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
+    <div className="page-shell mx-auto grid max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[0.85fr_1.15fr] lg:py-16">
       <section>
-        <p className="text-sm font-semibold uppercase tracking-wide text-[#0f766e]">
+        <p className="text-sm font-semibold uppercase tracking-wide text-accent">
           Contact
         </p>
-        <h1 className="mt-3 text-4xl font-bold text-[#111827] sm:text-5xl">
+        <h1 className="title-text mt-3 text-4xl font-black sm:text-5xl">
           Tell us what you are preparing for.
         </h1>
-        <p className="mt-5 text-lg leading-8 text-[#475569]">
+        <p className="soft-text mt-5 text-lg leading-8">
           Share your target role, timeline, or feedback. The team can help shape
           the experience around your interview preparation workflow.
         </p>
         <div className="mt-8 space-y-4">
           {[
-            ["Support", "help@aiinterviewcoach.dev"],
+            ["Support", "help@aiinterviewplatform.dev"],
             ["Response time", "Usually within one business day"],
             ["Best for", "Product, engineering, data, and operations roles"],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-lg border border-[#e2e8f0] bg-white p-5 shadow-sm">
-              <p className="text-sm font-semibold text-[#64748b]">{label}</p>
-              <p className="mt-1 font-bold text-[#17202a]">{value}</p>
+            <div key={label} className="tech-card rounded-lg p-5">
+              <p className="muted-text text-sm font-semibold">{label}</p>
+              <p className="title-text mt-1 font-bold">{value}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <form action={handleSubmit} className="rounded-lg border border-[#dbe4ef] bg-white p-6 shadow-sm sm:p-8">
+      <form action={handleSubmit} className="tech-card rounded-lg p-6 sm:p-8">
         <div className="grid gap-5 sm:grid-cols-2">
           <label className="block">
-            <span className="text-sm font-semibold text-[#334155]">Name</span>
+            <span className="soft-text text-sm font-semibold">Name</span>
             <input
               name="name"
               type="text"
               required
               placeholder="Your name"
-              className="mt-2 w-full rounded-md border border-[#cbd5e1] px-4 py-3 text-[#17202a] outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-[#ccfbf1]"
+              className="input-control mt-2"
             />
           </label>
           <label className="block">
-            <span className="text-sm font-semibold text-[#334155]">Email</span>
+            <span className="soft-text text-sm font-semibold">Email</span>
             <input
               name="email"
               type="email"
               required
               placeholder="you@example.com"
-              className="mt-2 w-full rounded-md border border-[#cbd5e1] px-4 py-3 text-[#17202a] outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-[#ccfbf1]"
+              className="input-control mt-2"
             />
           </label>
         </div>
         <label className="mt-5 block">
-          <span className="text-sm font-semibold text-[#334155]">Message</span>
+          <span className="soft-text text-sm font-semibold">Message</span>
           <textarea
             name="message"
             required
             rows={7}
             placeholder="I am preparing for..."
-            className="mt-2 w-full resize-none rounded-md border border-[#cbd5e1] px-4 py-3 text-[#17202a] outline-none transition focus:border-[#0f766e] focus:ring-4 focus:ring-[#ccfbf1]"
+            className="input-control mt-2 resize-none"
           />
         </label>
-        <button
-          type="submit"
-          className="mt-6 rounded-md bg-[#0f766e] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#115e59]"
-        >
+        <button type="submit" className="btn-primary mt-6">
           Send message -&gt;
         </button>
       </form>

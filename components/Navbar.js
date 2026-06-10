@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,24 +13,42 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") {
+      return "dark";
+    }
+
+    return window.localStorage.getItem("ai-interview-theme") === "light"
+      ? "light"
+      : "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("ai-interview-theme", theme);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
+  }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#e2e8f0] bg-white/90 backdrop-blur">
+    <header className="site-header sticky top-0 z-30">
       <nav className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
-        <Link href="/" className="flex items-center gap-3" aria-label="AI Interview home">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-[#0f766e] font-bold text-white">
+        <Link href="/" className="flex items-center gap-3" aria-label="AI Interview Platform home">
+          <span className="brand-mark grid h-10 w-10 place-items-center rounded-lg font-bold">
             AI
           </span>
           <span className="leading-tight">
-            <span className="block text-sm font-semibold tracking-wide text-[#0f766e]">
+            <span className="block text-sm font-semibold tracking-wide text-accent">
               Interview
             </span>
-            <span className="block text-lg font-bold text-[#17202a]">Coach</span>
+            <span className="title-text block text-lg font-bold">Platform</span>
           </span>
         </Link>
 
         <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
-          <div className="flex flex-wrap items-center gap-1 rounded-lg bg-[#f1f5f9] p-1">
+          <div className="nav-cluster flex flex-wrap items-center gap-1 rounded-lg p-1">
             {links.map((link) => {
               const isActive = pathname === link.href;
 
@@ -38,10 +56,8 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? "bg-white text-[#0f766e] shadow-sm"
-                      : "text-[#475569] hover:bg-white/70 hover:text-[#17202a]"
+                  className={`nav-link rounded-md px-3 py-2 text-sm font-semibold transition ${
+                    isActive ? "nav-link-active shadow-sm" : ""
                   }`}
                 >
                   {link.label}
@@ -50,15 +66,23 @@ export default function Navbar() {
             })}
           </div>
 
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-pressed={theme === "dark"}
+            className="theme-toggle rounded-md px-3 py-2 text-sm font-semibold transition"
+          >
+            Theme: {theme === "dark" ? "Dark" : "Light"}
+          </button>
           <Link
             href="/login"
-            className="rounded-md px-3 py-2 text-sm font-semibold text-[#334155] transition hover:bg-[#eef2f7]"
+            className="nav-link rounded-md px-3 py-2 text-sm font-semibold transition"
           >
             Log in
           </Link>
           <Link
             href="/signup"
-            className="rounded-md bg-[#ea580c] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#c2410c]"
+            className="btn-hot min-h-0 px-4 py-2"
           >
             Sign up
           </Link>

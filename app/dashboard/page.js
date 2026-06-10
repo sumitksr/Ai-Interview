@@ -9,22 +9,19 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-5 py-10 sm:px-8">
+    <div className="page-shell mx-auto max-w-7xl px-5 py-10 sm:px-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-[#0f766e]">
+          <p className="text-sm font-semibold uppercase tracking-wide text-accent">
             Candidate workspace
           </p>
-          <h1 className="mt-2 text-4xl font-bold text-[#111827]">Dashboard</h1>
-          <p className="mt-3 max-w-2xl text-[#64748b]">
+          <h1 className="title-text mt-2 text-4xl font-black">Dashboard</h1>
+          <p className="muted-text mt-3 max-w-2xl">
             Review interview performance, resume strength, and the next practice
             sessions to prioritize.
           </p>
         </div>
-        <Link
-          href="/signup"
-          className="rounded-md bg-[#ea580c] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#c2410c]"
-        >
+        <Link href="/signup" className="btn-hot">
           New session -&gt;
         </Link>
       </div>
@@ -36,26 +33,26 @@ export default function Dashboard() {
           ["Resume fit", "74%", "Add project metrics"],
           ["Next goal", "System design", "2 drills queued"],
         ].map(([label, value, note]) => (
-          <article key={label} className="rounded-lg border border-[#e2e8f0] bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-[#64748b]">{label}</p>
-            <p className="mt-2 text-3xl font-bold text-[#17202a]">{value}</p>
-            <p className="mt-2 text-sm text-[#0f766e]">{note}</p>
+          <article key={label} className="tech-card rounded-lg p-5">
+            <p className="muted-text text-sm font-semibold">{label}</p>
+            <p className="title-text mt-2 text-3xl font-black">{value}</p>
+            <p className="mt-2 text-sm text-accent">{note}</p>
           </article>
         ))}
       </section>
 
       <section className="mt-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-        <div className="rounded-lg border border-[#e2e8f0] bg-white p-6 shadow-sm">
+        <div className="tech-card rounded-lg p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-[#17202a]">Recent interviews</h2>
-              <p className="mt-1 text-sm text-[#64748b]">Latest practice attempts and review states.</p>
+              <h2 className="title-text text-xl font-bold">Recent interviews</h2>
+              <p className="muted-text mt-1 text-sm">Latest practice attempts and review states.</p>
             </div>
           </div>
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[640px] border-separate border-spacing-y-2 text-left text-sm">
               <thead>
-                <tr className="text-[#64748b]">
+                <tr className="muted-text">
                   <th className="px-4 py-2 font-semibold">Role</th>
                   <th className="px-4 py-2 font-semibold">Focus</th>
                   <th className="px-4 py-2 font-semibold">Score</th>
@@ -64,11 +61,11 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {interviews.map(([role, focus, score, status]) => (
-                  <tr key={`${role}-${focus}`} className="bg-[#f8fafc]">
-                    <td className="rounded-l-md px-4 py-4 font-semibold text-[#17202a]">{role}</td>
-                    <td className="px-4 py-4 text-[#475569]">{focus}</td>
-                    <td className="px-4 py-4 font-bold text-[#0f766e]">{score}%</td>
-                    <td className="rounded-r-md px-4 py-4 text-[#475569]">{status}</td>
+                  <tr key={`${role}-${focus}`} className="tech-card-subtle">
+                    <td className="title-text rounded-l-md px-4 py-4 font-semibold">{role}</td>
+                    <td className="soft-text px-4 py-4">{focus}</td>
+                    <td className="px-4 py-4 font-bold text-accent">{score}%</td>
+                    <td className="soft-text rounded-r-md px-4 py-4">{status}</td>
                   </tr>
                 ))}
               </tbody>
@@ -76,20 +73,20 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <aside className="rounded-lg border border-[#e2e8f0] bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-[#17202a]">Resume signals</h2>
+        <aside className="tech-card rounded-lg p-6">
+          <h2 className="title-text text-xl font-bold">Resume signals</h2>
           <div className="mt-5 space-y-5">
             {[
-              ["Impact metrics", 68, "#ea580c"],
-              ["Keyword match", 81, "#0f766e"],
-              ["Project clarity", 72, "#0891b2"],
+              ["Impact metrics", 68, "var(--hot)"],
+              ["Keyword match", 81, "var(--accent)"],
+              ["Project clarity", 72, "var(--cyan)"],
             ].map(([label, value, color]) => (
               <div key={label}>
                 <div className="flex justify-between text-sm">
-                  <span className="font-semibold text-[#334155]">{label}</span>
-                  <span className="text-[#64748b]">{value}%</span>
+                  <span className="soft-text font-semibold">{label}</span>
+                  <span className="muted-text">{value}%</span>
                 </div>
-                <div className="mt-2 h-2 rounded bg-[#e2e8f0]">
+                <div className="mt-2 h-2 rounded bg-panel">
                   <div
                     className="h-2 rounded"
                     style={{ width: `${value}%`, backgroundColor: color }}
@@ -98,7 +95,7 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-          <p className="mt-6 rounded-lg bg-[#fff7ed] p-4 text-sm leading-6 text-[#9a3412]">
+          <p className="soft-text mt-6 rounded-lg bg-hot/10 p-4 text-sm leading-6">
             Add quantified outcomes to two projects before your next behavioral
             round.
           </p>
