@@ -3,16 +3,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import connectDB from "@/lib/mongodb";
 import User from "@/models/User";
+import Teacher from "@/models/Teacher";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
-export default function Signup() {
+export default function TeacherSignup() {
   async function handleSubmit(formData) {
     "use server";
 
     const name = formData.get("name");
     const email = formData.get("email");
-    const targetRole = formData.get("targetRole");
+    const username = formData.get("username");
+    const fees = formData.get("fees");
     const password = formData.get("password");
 
     await connectDB();
@@ -23,33 +25,47 @@ export default function Signup() {
       return;
     }
 
+    const existingTeacher = await Teacher.findOne({ username });
+    if (existingTeacher) {
+      console.error("Username already taken.");
+      return;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
-      role: "user",
+      role: "teacher",
     });
 
-    await newUser.save();
+    const savedUser = await newUser.save();
+
+    const newTeacher = new Teacher({
+      user: savedUser._id,
+      username,
+      fees: Number(fees),
+    });
+
+    await newTeacher.save();
 
     const cookieStore = await cookies();
     cookieStore.set("isLoggedIn", "true", { path: "/" });
 
-    console.log("Signup successful:", email);
+    console.log("Teacher Signup successful:", username);
     redirect("/dashboard");
   }
 
   return (
     <div className="page-shell mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:py-16">
       <section className="tech-card rounded-lg p-6 sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-hot">
-          Sign up
+        <p className="text-sm font-semibold uppercase tracking-wide text-cyan">
+          Teacher Sign up
         </p>
-        <h1 className="title-text mt-3 text-3xl font-black">Create your prep workspace</h1>
+        <h1 className="title-text mt-3 text-3xl font-black">Become an Interviewer</h1>
         <p className="muted-text mt-3">
-          Set your target role and start with a personalized practice plan.
+          Join our platform to conduct live mock interviews and help candidates succeed.
         </p>
 
         <form action={handleSubmit} className="mt-8 space-y-5">
@@ -76,21 +92,26 @@ export default function Signup() {
           </label>
 
           <label className="block">
-            <span className="soft-text text-sm font-semibold">Target role</span>
-            <select
-              name="targetRole"
+            <span className="soft-text text-sm font-semibold">Username</span>
+            <input
+              name="username"
+              type="text"
               required
-              defaultValue=""
+              placeholder="e.g. tech_guru_99"
               className="input-control mt-2"
-            >
-              <option value="" disabled>
-                Select a role
-              </option>
-              <option>Software Engineer</option>
-              <option>Data Analyst</option>
-              <option>Product Manager</option>
-              <option>UX Designer</option>
-            </select>
+            />
+          </label>
+
+          <label className="block">
+            <span className="soft-text text-sm font-semibold">Hourly Fee ($)</span>
+            <input
+              name="fees"
+              type="number"
+              min="0"
+              required
+              placeholder="e.g. 50"
+              className="input-control mt-2"
+            />
           </label>
 
           <label className="block">
@@ -104,8 +125,8 @@ export default function Signup() {
             />
           </label>
 
-          <button type="submit" className="btn-hot w-full">
-            Create account -&gt;
+          <button type="submit" className="btn-primary w-full">
+            Apply as Teacher -&gt;
           </button>
         </form>
 
@@ -116,20 +137,20 @@ export default function Signup() {
           </Link>
         </p>
         <p className="muted-text mt-2 text-center text-sm">
-          Want to become an interviewer?{" "}
-          <Link href="/signup/teacher" className="font-semibold text-cyan hover:underline">
-            Sign up as a Teacher
+          Looking to practice interviews?{" "}
+          <Link href="/signup" className="font-semibold text-cyan hover:underline">
+            Sign up as a Student
           </Link>
         </p>
       </section>
 
       <section className="tech-card rounded-lg p-6 sm:p-8">
-        <p className="text-sm font-semibold text-hot">Your first plan includes</p>
+        <p className="text-sm font-semibold text-cyan">Why teach with us?</p>
         <div className="mt-6 space-y-4">
           {[
-            ["Resume review", "Find missing skills and strengthen project impact."],
-            ["Interview roadmap", "Practice the question types most likely for your role."],
-            ["Score tracking", "Measure clarity, depth, confidence, and structure."],
+            ["Set your own schedule", "Conduct interviews whenever you are available, right from your dashboard."],
+            ["Earn competitive rates", "You set your own hourly fee and keep the majority of your earnings."],
+            ["Help candidates succeed", "Provide valuable feedback and guide the next generation of professionals."],
           ].map(([title, text]) => (
             <div key={title} className="tech-card-subtle rounded-lg p-5">
               <p className="font-bold">{title}</p>

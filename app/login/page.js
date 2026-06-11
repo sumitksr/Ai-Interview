@@ -1,5 +1,10 @@
 import React from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import connectDB from "@/lib/mongodb";
+import User from "@/models/User";
+import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 
 export default function Login() {
   async function handleSubmit(formData) {
@@ -8,7 +13,24 @@ export default function Login() {
     const email = formData.get("email");
     const password = formData.get("password");
 
-    console.log(email, password);
+    await connectDB();
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      console.error("User not found.");
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.error("Invalid credentials.");
+      return;
+    }
+
+    const cookieStore = await cookies();
+    cookieStore.set("isLoggedIn", "true", { path: "/" });
+
+    redirect("/dashboard");
   }
 
   return (

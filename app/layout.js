@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Navbar, Footer } from "../imports";
+import { cookies } from "next/headers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,7 +19,10 @@ export const metadata = {
   description: "A platform for conducting AI interviews ",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const cookieStore = await cookies();
+  const isLoggedIn = cookieStore.get("isLoggedIn")?.value === "true";
+
   return (
     <html
       lang="en"
@@ -37,7 +41,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full">
-        <Navbar />
+        <Navbar isLoggedIn={isLoggedIn} />
         <main className="min-h-[calc(100vh-168px)]">{children}</main>
         <Footer />
       </body>

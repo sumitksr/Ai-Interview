@@ -10,12 +10,16 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ isLoggedIn = false }) {
   const pathname = usePathname();
   // if(pathname === "/login" || pathname === "/signup") {
   //   return null; 
   // }
-  const [login, setLogin] = useState(false);
+  const [login, setLogin] = useState(isLoggedIn);
+
+  useEffect(() => {
+    setLogin(isLoggedIn);
+  }, [isLoggedIn]);
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") {
       return "dark";
