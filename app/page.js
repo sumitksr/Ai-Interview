@@ -1,12 +1,14 @@
 import React from "react";
 import Link from "next/link";
-
+import {connectDB} from "../imports";
 export default function Home() {
   const metrics = [
     ["Clarity", "88", "Answer flow"],
     ["Depth", "76", "Technical detail"],
     ["Confidence", "81", "Delivery"],
   ];
+  connectDB();
+
 
   return (
     <div className="page-shell overflow-hidden">
