@@ -1,44 +1,41 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
-import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
+import { useRouter } from "next/navigation";
 
 export default function Signup() {
-  async function handleSubmit(formData) {
-    "use server";
+  const router = useRouter();
+  const [error, setError] = useState("");
 
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+
+    const formData = new FormData(e.target);
     const name = formData.get("name");
     const email = formData.get("email");
     const targetRole = formData.get("targetRole");
     const password = formData.get("password");
 
-    await connectDB();
+    try {
+      const res = await fetch("/api/v1/user/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, targetRole, password }),
+      });
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.error("Email already in use.");
-      return;
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Signup failed");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred. Please try again.");
     }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      role: "user",
-    });
-
-    await newUser.save();
-
-    const cookieStore = await cookies();
-    cookieStore.set("isLoggedIn", "true", { path: "/" });
-
-    console.log("Signup successful:", email);
-    redirect("/dashboard");
   }
 
   return (
@@ -52,7 +49,13 @@ export default function Signup() {
           Set your target role and start with a personalized practice plan.
         </p>
 
-        <form action={handleSubmit} className="mt-8 space-y-5">
+        {error && (
+          <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-500 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <label className="block">
             <span className="soft-text text-sm font-semibold">Full name</span>
             <input

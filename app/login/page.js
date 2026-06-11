@@ -1,36 +1,39 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
-import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
-  async function handleSubmit(formData) {
-    "use server";
+  const router = useRouter();
+  const [error, setError] = useState("");
 
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
+
+    const formData = new FormData(e.target);
     const email = formData.get("email");
     const password = formData.get("password");
 
-    await connectDB();
-    const user = await User.findOne({ email });
+    try {
+      const res = await fetch("/api/v1/user/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    if (!user) {
-      console.error("User not found.");
-      return;
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Login failed");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch (err) {
+      console.error(err);
+      setError("An error occurred. Please try again.");
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.error("Invalid credentials.");
-      return;
-    }
-
-    const cookieStore = await cookies();
-    cookieStore.set("isLoggedIn", "true", { path: "/" });
-
-    redirect("/dashboard");
   }
 
   return (
@@ -64,7 +67,13 @@ export default function Login() {
           Enter your credentials to review interview sessions and resume feedback.
         </p>
 
-        <form action={handleSubmit} className="mt-8 space-y-5">
+        {error && (
+          <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-500 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <label className="block" htmlFor="email">
             <span className="soft-text text-sm font-semibold">Email</span>
             <input
