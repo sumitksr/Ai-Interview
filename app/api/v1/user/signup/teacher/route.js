@@ -37,7 +37,10 @@ export async function POST(req) {
     await newTeacher.save();
 
     const response = NextResponse.json({ message: "Teacher Signup successful" }, { status: 201 });
-    response.cookies.set("isLoggedIn", "true", { path: "/" });
+    response.cookies.set("isLoggedIn", "true", {
+      path: "/",
+      maxAge: 60 * 60 * 24, 
+    });
 
     return response;
   } catch (error) {

@@ -18,7 +18,10 @@ export async function POST(req) {
     }
 
     const response = NextResponse.json({ message: "Login successful" }, { status: 200 });
-    response.cookies.set("isLoggedIn", "true", { path: "/" });
+    response.cookies.set("isLoggedIn", "true", {
+        path: "/",
+        maxAge: 60 * 60 * 24, 
+      });
     
     return response;
   } catch (error) {
