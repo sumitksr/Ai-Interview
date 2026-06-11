@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,6 +12,9 @@ const links = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  // if(pathname === "/login" || pathname === "/signup") {
+  //   return null; 
+  // }
   const [login, setLogin] = useState(false);
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") {
@@ -46,22 +48,22 @@ export default function Navbar() {
 
   return (
     <div 
-      className={`sticky top-0 z-50 flex justify-center transition-all duration-500 ${
-        isScrolled ? "pt-4 px-4" : "pt-0 px-0"
+      className={`sticky top-0 z-50 flex justify-center w-full transition-all duration-300 ease-out ${
+        isScrolled ? "pt-4 px-4 border-b border-transparent bg-transparent" : "pt-0 px-0 bg-[var(--surface)]/80 backdrop-blur-md border-b border-[var(--border)]/50"
       }`}
     >
       <header
-        className={`w-full transition-all duration-500 relative ${
+        className={`w-full transition-all duration-300 ease-out relative ${
           isScrolled
             ? "max-w-4xl rounded-2xl bg-[var(--surface)]/70 backdrop-blur-md border border-[var(--border)] shadow-lg py-2.5 px-4"
-            : "max-w-7xl bg-transparent py-5 px-5 sm:px-8 border border-transparent"
+            : "max-w-7xl py-5 px-5 sm:px-8 border border-transparent"
         }`}
       >
         <nav className="flex items-center justify-between">
           
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 md:gap-4 group" aria-label="AI Interview Platform home">
-            <div className={`brand-mark grid place-items-center rounded-xl font-bold transition-all duration-500 group-hover:scale-105 ${
+            <div className={`brand-mark grid place-items-center rounded-xl font-bold transition-all duration-300 ease-out group-hover:scale-105 ${
               isScrolled ? "h-9 w-9" : "h-10 w-10"
             }`}>
               <svg width={isScrolled ? "18" : "20"} height={isScrolled ? "18" : "20"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -74,7 +76,7 @@ export default function Navbar() {
                   Interview
                 </span>
               )}
-              <span className={`title-text font-black leading-none tracking-tight transition-all duration-300 ${
+              <span className={`title-text font-black leading-none tracking-tight transition-all duration-300 ease-out ${
                 isScrolled ? "text-lg" : "text-[1.1rem]"
               }`}>
                 Platform
