@@ -3,10 +3,12 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
   const router = useRouter();
   const [error, setError] = useState("");
+  const { login } = useAuth();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -29,6 +31,7 @@ export default function Login() {
         return;
       }
 
+      login();
       router.push("/dashboard");
     } catch (err) {
       console.error(err);

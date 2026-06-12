@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
 const links = [
   { href: "/", label: "Home" },
@@ -10,16 +11,10 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
-export default function Navbar({ isLoggedIn = false }) {
+export default function Navbar() {
   const pathname = usePathname();
-  // if(pathname === "/login" || pathname === "/signup") {
-  //   return null; 
-  // }
-  const [login, setLogin] = useState(isLoggedIn);
+  const { isLoggedIn: login, logout } = useAuth();
 
-  useEffect(() => {
-    setLogin(isLoggedIn);
-  }, [isLoggedIn]);
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") {
       return "dark";
@@ -137,11 +132,22 @@ export default function Navbar({ isLoggedIn = false }) {
                 </>
             ):
             (
-              
-              // here will add image for gmail login and link to profile page
-              <Link href="/profile" className="btn-primary min-h-0 py-2.5 px-4 text-sm rounded-xl font-bold">
-              Profile
-            </Link>)
+              <>
+              {/* // here will add image for gmail login and link to profile page */}
+                <Link href="/profile" className="btn-primary min-h-0 py-2.5 px-4 text-sm rounded-xl font-bold">
+                  Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    logout()
+                  }}
+                  className="btn-secondary min-h-0 py-2.5 px-4 text-sm rounded-xl font-bold"
+                >
+                  Logout
+                </button>
+              </>
+            
+            )
             }
           </div>
 

@@ -6,6 +6,7 @@ import Review from "../models/reviews";
 import Teacher from "../models/Teacher";
 import UserData from "../models/UserData";
 import Booking from "../models/Booking";
+import { AuthProvider } from "../context/AuthContext";
 
 export { 
     Navbar, 
@@ -15,5 +16,6 @@ export {
     Booking,
     Review,
     Teacher,
-    UserData
+    UserData,
+    AuthProvider
 };

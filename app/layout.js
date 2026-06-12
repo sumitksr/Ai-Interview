@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-import { Navbar, Footer } from "../imports";
+import { Navbar, Footer, AuthProvider } from "@/imports";
 import { cookies } from "next/headers";
 
 const geistSans = Geist({
@@ -41,10 +41,13 @@ export default async function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full">
-        <Navbar isLoggedIn={isLoggedIn} />
-        <main className="min-h-[calc(100vh-168px)]">{children}</main>
-        <Footer />
+        <AuthProvider initialLoginState={isLoggedIn}>
+          <Navbar />
+          <main className="min-h-[calc(100vh-168px)]">{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );
 }
+
