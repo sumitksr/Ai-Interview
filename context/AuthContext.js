@@ -20,6 +20,8 @@ export function AuthProvider({ children, initialLoginState }) {
       await fetch("/api/v1/user/logout", { method: "POST" });
     } catch (err) {
       console.error("Logout failed", err);
+    } finally {
+      window.location.href = "/";
     }
   };
 

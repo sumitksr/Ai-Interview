@@ -64,7 +64,7 @@ export default function Dashboard() {
           <p className="muted-text text-xl mb-10 leading-relaxed">
             You haven't taken any interviews yet. Complete your first practice session to unlock personalized performance analysis, score tracking, and AI-tailored feedback.
           </p>
-          <Link href="/signup" className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 ease-in-out bg-gradient-to-r from-[var(--cyan)] to-[var(--accent)] rounded-2xl hover:scale-105 shadow-xl hover:shadow-[var(--cyan)]/25">
+          <Link href="/interview/setup" className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-300 ease-in-out bg-gradient-to-r from-[var(--cyan)] to-[var(--accent)] rounded-2xl hover:scale-105 shadow-xl hover:shadow-[var(--cyan)]/25">
             <span className="mr-2">Start Your First Interview</span>
             <svg className="w-5 h-5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
           </Link>
@@ -102,7 +102,7 @@ export default function Dashboard() {
             Review your interview performance, track your scores, and analyze your AI feedback.
           </p>
         </div>
-        <Link href="/signup" className="btn-primary whitespace-nowrap shadow-lg shadow-[var(--cyan)]/20 hover:shadow-[var(--cyan)]/40 transition-all">
+        <Link href="/interview/setup" className="btn-primary whitespace-nowrap shadow-lg shadow-[var(--cyan)]/20 hover:shadow-[var(--cyan)]/40 transition-all">
           New session <span className="ml-1">→</span>
         </Link>
       </div>
