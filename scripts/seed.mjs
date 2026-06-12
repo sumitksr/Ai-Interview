@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import User from "../models/User.js";
 import Teacher from "../models/Teacher.js";
@@ -27,12 +28,18 @@ const seedDatabase = async () => {
     // console.log("Existing data cleared.");
 
     console.log("Seeding Users...");
+    const saltRounds = Number(process.env.N) || 10;
+
+    const hashedPassword = await bcrypt.hash(
+      "password123",
+      saltRounds
+    );
     const users = await User.insertMany([
-      { name: "Admin User", email: "admin@example.com", password: "password123", role: "admin" },
-      { name: "John Doe", email: "student1@example.com", password: "password123", role: "user" },
-      { name: "Jane Smith", email: "student2@example.com", password: "password123", role: "user" },
-      { name: "Alice Teacher", email: "teacher1@example.com", password: "password123", role: "teacher" },
-      { name: "Bob Mentor", email: "teacher2@example.com", password: "password123", role: "teacher" },
+      { name: "Admin User", email: "admin@example.com", password: hashedPassword, role: "admin" },
+      { name: "John Doe", email: "student1@example.com", password: hashedPassword, role: "user" },
+      { name: "Jane Smith", email: "student2@example.com", password: hashedPassword, role: "user" },
+      { name: "Alice Teacher", email: "teacher1@example.com", password: hashedPassword, role: "teacher" },
+      { name: "Bob Mentor", email: "teacher2@example.com", password: hashedPassword, role: "teacher" },
     ]);
 
     const student1 = users[1];

@@ -119,7 +119,7 @@ export default function Navbar() {
               )}
             </button>
 
-            <div className="w-px h-5 border-l border-[var(--border)] hidden lg:block"></div>
+            <div className="w-px h-5 border-l border-border hidden lg:block"></div>
               {!login ? (
                 <>
                 <Link href="/login" className="nav-link text-sm font-semibold transition-colors hover:text-[var(--foreground)] px-2">

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { Teacher,User ,connectDB } from "@/imports";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_for_development";
 
 export async function POST(req) {
   try {
@@ -17,7 +20,8 @@ export async function POST(req) {
       return NextResponse.json({ error: "Username already taken." }, { status: 400 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const saltRounds = Number(process.env.N) || 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     const newUser = new User({
       name,
@@ -36,7 +40,16 @@ export async function POST(req) {
 
     await newTeacher.save();
 
+    const token = jwt.sign({ id: savedUser._id, role: savedUser.role }, JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
     const response = NextResponse.json({ message: "Teacher Signup successful" }, { status: 201 });
+    response.cookies.set("token", token, {
+      path: "/",
+      httpOnly: true,
+      maxAge: 60 * 60 * 24, 
+    });
     response.cookies.set("isLoggedIn", "true", {
       path: "/",
       maxAge: 60 * 60 * 24, 

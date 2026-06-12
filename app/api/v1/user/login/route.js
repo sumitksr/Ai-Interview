@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { connectDB, User } from "@/imports";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_for_development";
 
 export async function POST(req) {
   try {
@@ -17,7 +20,16 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
     }
 
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
     const response = NextResponse.json({ message: "Login successful" }, { status: 200 });
+    response.cookies.set("token", token, {
+        path: "/",
+        httpOnly: true,
+        maxAge: 60 * 60 * 24, 
+      });
     response.cookies.set("isLoggedIn", "true", {
         path: "/",
         maxAge: 60 * 60 * 24, 

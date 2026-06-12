@@ -13,9 +13,14 @@ export function AuthProvider({ children, initialLoginState }) {
 
   const login = () => setIsLoggedIn(true);
   
-  const logout = () => {
+  const logout = async () => {
     setIsLoggedIn(false);
     document.cookie = "isLoggedIn=; max-age=0; path=/";
+    try {
+      await fetch("/api/v1/user/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
   };
 
   return (
