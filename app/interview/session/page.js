@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 export default function InterviewSession() {
@@ -8,6 +8,14 @@ export default function InterviewSession() {
   const [context, setContext] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  // Recording & Transcription state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const videoRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   useEffect(() => {
     const data = localStorage.getItem("interviewContext");
@@ -19,6 +27,102 @@ export default function InterviewSession() {
     }
     setLoading(false);
   }, [router]);
+
+  useEffect(() => {
+    async function setupMedia() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        console.error("Error accessing media devices.", err);
+      }
+    }
+    
+    // Only setup media when context is loaded and we are not loading
+    if (!loading && context) {
+      setupMedia();
+    }
+    
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [loading, context]);
+
+  const startRecording = () => {
+    if (!videoRef.current || !videoRef.current.srcObject) return;
+    
+    audioChunksRef.current = [];
+    const stream = videoRef.current.srcObject;
+    
+    // Use only audio tracks to avoid mimeType conflicts with video
+    const audioStream = new MediaStream(stream.getAudioTracks());
+    
+    let options = { mimeType: 'audio/webm' };
+    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+      options = {}; // Fallback to default audio format
+    }
+    
+    try {
+      const mediaRecorder = new MediaRecorder(audioStream, options);
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        handleTranscription(audioBlob, mimeType);
+      };
+      
+      mediaRecorder.start();
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+      setTranscript("");
+    } catch (err) {
+      console.error("MediaRecorder start error:", err);
+      alert("Error starting recording. Please check browser permissions and support.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleTranscription = async (audioBlob, mimeType) => {
+    setIsTranscribing(true);
+    try {
+      const formData = new FormData();
+      const ext = mimeType.includes('mp4') ? 'mp4' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+      formData.append("audio", audioBlob, `recording.${ext}`);
+
+      const response = await fetch("/api/v1/interview/transcribe", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to transcribe");
+      }
+
+      const data = await response.json();
+      setTranscript(data.text);
+    } catch (error) {
+      console.error("Transcription error:", error);
+      setTranscript("Error transcribing audio. Please try again.");
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -91,9 +195,55 @@ export default function InterviewSession() {
           {currentQuestion}
         </h2>
 
+        <div className="mb-8 bg-[var(--surface-2)] rounded-2xl overflow-hidden border border-[var(--border)] flex justify-center relative">
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            muted 
+            playsInline 
+            className="w-full max-w-[600px] h-auto object-cover transform scale-x-[-1]"
+          ></video>
+        </div>
+
+        <div className="flex flex-col items-center mb-8 gap-4">
+           {isRecording ? (
+             <button 
+               onClick={stopRecording}
+               className="px-6 py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all flex items-center gap-2"
+             >
+               <span className="w-3 h-3 rounded-full bg-white animate-pulse"></span>
+               Stop Recording
+             </button>
+           ) : (
+             <button 
+               onClick={startRecording}
+               className="px-6 py-3 rounded-xl font-bold text-white bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/20 hover:scale-[1.02] transition-all flex items-center gap-2"
+             >
+               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+               Record Answer
+             </button>
+           )}
+        </div>
+
+        {(isTranscribing || transcript) && (
+          <div className="mb-8 p-6 bg-[var(--surface-2)] rounded-xl border border-[var(--border)] text-left">
+            <h3 className="font-semibold text-[var(--foreground)] mb-3 flex items-center gap-2">
+              <svg className="w-5 h-5 text-[var(--cyan)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+              Your Transcription 
+              {isTranscribing && <span className="inline-block w-4 h-4 border-2 border-[var(--cyan)] border-t-transparent rounded-full animate-spin ml-2"></span>}
+            </h3>
+            <p className="text-[var(--muted)] leading-relaxed text-sm md:text-base">
+              {isTranscribing ? "Listening and transcribing..." : transcript}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-4 pt-4 border-t border-[var(--border)]">
           <button
-            onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+            onClick={() => {
+              setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1));
+              setTranscript("");
+            }}
             disabled={currentQuestionIndex === 0}
             className="px-6 py-3 rounded-xl font-semibold bg-[var(--surface-2)] text-[var(--foreground)] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--surface)] transition-colors"
           >
@@ -102,7 +252,10 @@ export default function InterviewSession() {
           
           {currentQuestionIndex < questions.length - 1 ? (
             <button
-              onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
+              onClick={() => {
+                setCurrentQuestionIndex(currentQuestionIndex + 1);
+                setTranscript("");
+              }}
               className="px-6 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[var(--cyan)] to-[var(--accent)] hover:scale-[1.02] shadow-lg transition-all"
             >
               Next Question
