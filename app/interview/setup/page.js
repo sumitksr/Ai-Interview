@@ -16,6 +16,7 @@ export default function InterviewSetup() {
     focus: "General",
     resumeText: "",
   });
+  const [resumeFile, setResumeFile] = useState(null);
 
   useEffect(() => {
     async function checkPrevData() {
@@ -50,6 +51,13 @@ export default function InterviewSetup() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setResumeFile(e.target.files[0]);
+      setFormData(prev => ({...prev, resumeText: ""}));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -59,25 +67,61 @@ export default function InterviewSetup() {
       return;
     }
 
-    if (!usePrevResume && !formData.resumeText.trim()) {
-      setError("Please paste your resume text, or select to use your previous resume.");
+    if (!usePrevResume && !formData.resumeText.trim() && !resumeFile) {
+      setError("Please upload a resume file, paste your resume text, or select to use your previous resume.");
       return;
     }
 
-    // Here you would typically send this data to your backend or store it in context
-    // before navigating to the actual interview page.
-    // For now, we will just route to a placeholder interview page.
-    console.log("Starting session with:", { ...formData, usePrevResume });
-    
-    // Example: save to localStorage to pass to the next page
-    localStorage.setItem("interviewContext", JSON.stringify({
-      targetRole: formData.targetRole,
-      experienceLevel: formData.experienceLevel,
-      focus: formData.focus,
-      resumeText: usePrevResume ? "PREVIOUS_RESUME" : formData.resumeText,
-    }));
+    setLoading(true);
 
-    router.push("/interview/session");
+    try {
+      if (usePrevResume) {
+        localStorage.setItem("interviewContext", JSON.stringify({
+          targetRole: formData.targetRole,
+          experienceLevel: formData.experienceLevel,
+          focus: formData.focus,
+          resumeText: "PREVIOUS_RESUME",
+        }));
+        router.push("/interview/session");
+        return;
+      }
+
+      const data = new FormData();
+      data.append("targetRole", formData.targetRole);
+      data.append("experienceLevel", formData.experienceLevel);
+      data.append("focus", formData.focus);
+      if (resumeFile) {
+        data.append("resumeFile", resumeFile);
+      } else {
+        data.append("resumeText", formData.resumeText);
+      }
+
+      const res = await fetch("/api/v1/interview/generate", {
+        method: "POST",
+        body: data,
+      });
+
+      if (!res.ok) {
+        const result = await res.json();
+        throw new Error(result.error || "Failed to generate questions");
+      }
+
+      const result = await res.json();
+      
+      localStorage.setItem("interviewContext", JSON.stringify({
+        targetRole: formData.targetRole,
+        experienceLevel: formData.experienceLevel,
+        focus: formData.focus,
+        resumeUrl: result.resumeUrl,
+        questions: result.questions,
+      }));
+
+      router.push("/interview/session");
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Something went wrong.");
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -165,8 +209,27 @@ export default function InterviewSetup() {
             )}
 
             {!usePrevResume && (
-              <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                <p className="text-xs text-[var(--muted)] mb-2">Paste your resume text below. Our AI will analyze it to ask highly personalized questions about your past experience.</p>
+              <div className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
+                <p className="text-xs text-[var(--muted)] mb-2">Upload your resume (PDF) or paste the text below. Our AI will analyze it to ask highly personalized questions about your past experience.</p>
+                
+                <div>
+                  <input
+                    type="file"
+                    name="resumeFile"
+                    accept=".pdf"
+                    onChange={handleFileChange}
+                    className="block w-full text-sm text-[var(--muted)]
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-xl file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-[var(--cyan)]/10 file:text-[var(--cyan)]
+                      hover:file:bg-[var(--cyan)]/20 transition-colors"
+                  />
+                  {resumeFile && <p className="text-xs text-green-400 mt-2">File selected: {resumeFile.name}</p>}
+                </div>
+
+                <div className="text-center soft-text text-sm font-semibold uppercase tracking-wider">OR</div>
+
                 <textarea
                   name="resumeText"
                   value={formData.resumeText}
