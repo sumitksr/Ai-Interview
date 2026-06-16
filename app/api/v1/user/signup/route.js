@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB, User } from "@/imports";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_for_development";
 
@@ -27,6 +28,9 @@ export async function POST(req) {
     });
 
     await newUser.save();
+
+    // Send welcome email without blocking the response
+    sendWelcomeEmail(newUser.email, newUser.name);
 
     const token = jwt.sign({ id: newUser._id, role: newUser.role }, JWT_SECRET, {
       expiresIn: "1d",

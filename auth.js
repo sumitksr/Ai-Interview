@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 import { connectDB, User } from "@/imports";
+import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
@@ -53,6 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               role: "user",
             });
             await dbUser.save();
+            sendWelcomeEmail(dbUser.email, dbUser.name);
           } else {
             let changed = false;
             if (!dbUser.googleId) { dbUser.googleId = profile.sub; changed = true; }
@@ -80,6 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               role: "user",
             });
             await dbUser.save();
+            sendWelcomeEmail(dbUser.email, dbUser.name);
           } else {
             let changed = false;
             if (!dbUser.githubId) { dbUser.githubId = githubId; changed = true; }
