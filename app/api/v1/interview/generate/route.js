@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/getAuthUser";
+import { connectDB, UserData } from "@/imports";
 import { v2 as cloudinary } from "cloudinary";
 import { GoogleGenAI } from "@google/genai";
+import { Readable } from "stream";
 
 const PDFParser = require("pdf2json");
 
@@ -54,15 +56,23 @@ export async function POST(req) {
 
       // Upload to Cloudinary
       try {
+        const originalName = resumeFile.name ? resumeFile.name.replace(/\.[^/.]+$/, "") : "resume";
+        const publicId = `${originalName}_${Date.now()}`;
+
         const uploadResult = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "resumes", resource_type: "raw" },
+            { 
+              folder: "ai interview platform", 
+              resource_type: "image",
+              format: "pdf",
+              public_id: publicId
+            },
             (error, result) => {
               if (error) reject(error);
               else resolve(result);
             }
           );
-          uploadStream.end(buffer);
+          Readable.from(buffer).pipe(uploadStream);
         });
         resumeUrl = uploadResult.secure_url;
       } catch (uploadError) {
@@ -122,6 +132,29 @@ export async function POST(req) {
         return NextResponse.json({ error: "Failed to parse questions from AI response." }, { status: 500 });
       }
     }
+
+    await connectDB();
+    
+    const formattedQuestions = questions.map(q => ({
+      question: q,
+      answer: "",
+      mistake: "",
+      feedback: ""
+    }));
+
+    // Save the generated interview to the database
+    await UserData.findOneAndUpdate(
+      { user: authUser.id },
+      { 
+        $push: { 
+          interviewHistory: { 
+            resume: resumeUrl || "", 
+            questions: formattedQuestions 
+          } 
+        } 
+      },
+      { upsert: true, new: true }
+    );
 
     return NextResponse.json({ questions, resumeUrl }, { status: 200 });
 
