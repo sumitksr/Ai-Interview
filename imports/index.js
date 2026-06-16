@@ -7,6 +7,7 @@ import Teacher from "../models/Teacher";
 import UserData from "../models/UserData";
 import Booking from "../models/Booking";
 import { AuthProvider } from "../context/AuthContext";
+import { cloudinary } from "../lib/cloudinary";
 
 export { 
     Navbar, 
@@ -17,5 +18,6 @@ export {
     Review,
     Teacher,
     UserData,
-    AuthProvider
+    AuthProvider,
+    cloudinary
 };

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/getAuthUser";
-import { connectDB, UserData } from "@/imports";
-import { v2 as cloudinary } from "cloudinary";
+import { connectDB, UserData, cloudinary } from "@/imports";
 import { GoogleGenAI } from "@google/genai";
 import { Readable } from "stream";
 
@@ -17,12 +16,6 @@ function parsePdfBuffer(buffer) {
     pdfParser.parseBuffer(buffer);
   });
 }
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
