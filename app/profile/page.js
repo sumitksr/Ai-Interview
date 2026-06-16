@@ -315,10 +315,9 @@ export default function ProfilePage() {
           </form>
         </SectionCard>
 
-        {/* ---- Set Password Section ---- */}
-        {!profile.hasPassword ? (
-          <SectionCard
-            title="Set a Password"
+        {/* ---- Change Password Section ---- */}
+        <SectionCard
+            title="Change Password"
             icon={
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
@@ -326,10 +325,6 @@ export default function ProfilePage() {
               </svg>
             }
           >
-            <p className="muted-text text-sm mb-5 leading-relaxed">
-              You signed up via <strong className="text-[var(--soft-text)]">{profile.googleId ? "Google" : "GitHub"}</strong> and don't have a password yet.
-              Setting one lets you also log in with your email and password.
-            </p>
 
             {pwStep === "idle" && (
               <>
@@ -418,27 +413,6 @@ export default function ProfilePage() {
               <Alert type="success" message="🎉 Password set! You can now log in with email & password." />
             )}
           </SectionCard>
-        ) : (
-          <SectionCard
-            title="Password"
-            icon={
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-            }
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-              <div>
-                <p className="font-semibold text-[var(--foreground)] text-sm">Password is set</p>
-                <p className="muted-text text-xs">You can log in with email &amp; password.</p>
-              </div>
-            </div>
-          </SectionCard>
-        )}
 
         {/* ---- Account Info ---- */}
         <SectionCard

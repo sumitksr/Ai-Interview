@@ -1,29 +1,14 @@
 import { NextResponse } from "next/server";
 import { connectDB, User } from "@/imports";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_for_development";
-
-async function getAuthUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  if (!token) return null;
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    return decoded;
-  } catch {
-    return null;
-  }
-}
+import { getAuthUser } from "@/lib/getAuthUser";
 
 // GET /api/v1/user/profile
 export async function GET() {
-  const decoded = await getAuthUser();
-  if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authUser = await getAuthUser();
+  if (!authUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await connectDB();
-  const user = await User.findById(decoded.id).select("-password -refreshToken");
+  const user = await User.findById(authUser.id).select("-password -refreshToken");
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   return NextResponse.json({
@@ -41,8 +26,8 @@ export async function GET() {
 
 // PATCH /api/v1/user/profile
 export async function PATCH(req) {
-  const decoded = await getAuthUser();
-  if (!decoded) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const authUser = await getAuthUser();
+  if (!authUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const { name } = body;
@@ -53,7 +38,7 @@ export async function PATCH(req) {
 
   await connectDB();
   const user = await User.findByIdAndUpdate(
-    decoded.id,
+    authUser.id,
     { name: name.trim() },
     { new: true }
   ).select("-password -refreshToken");
@@ -61,7 +46,6 @@ export async function PATCH(req) {
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   const response = NextResponse.json({ message: "Profile updated", name: user.name });
-  // Update the userInfo cookie
   response.cookies.set("userInfo", JSON.stringify({ name: user.name, image: user.image || "" }), {
     path: "/",
     maxAge: 60 * 60 * 24,

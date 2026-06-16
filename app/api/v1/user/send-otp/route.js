@@ -1,25 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectDB, User } from "@/imports";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
+import { getAuthUser } from "@/lib/getAuthUser";
 import nodemailer from "nodemailer";
-
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_for_development";
 
 // Shared OTP store across route modules (global persists across hot reloads)
 // In production, use Redis instead.
 const otpStore = global._otpStore || (global._otpStore = new Map());
-
-async function getAuthUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  if (!token) return null;
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch {
-    return null;
-  }
-}
 
 // POST /api/v1/user/send-otp  — Send OTP to user's email
 export async function POST(req) {
@@ -29,10 +15,6 @@ export async function POST(req) {
   await connectDB();
   const user = await User.findById(decoded.id);
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-  if (user.password) {
-    return NextResponse.json({ error: "Password already set. Use login instead." }, { status: 400 });
-  }
 
   // Generate 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();

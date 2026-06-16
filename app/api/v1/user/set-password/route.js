@@ -1,25 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectDB, User } from "@/imports";
-import jwt from "jsonwebtoken";
+import { getAuthUser } from "@/lib/getAuthUser";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_for_development";
-
-// Shared OTP store — must import from same module for it to persist
-// In production, use Redis. For now, we use a global variable.
+// Shared OTP store — must match the same global as send-otp
 const otpStore = global._otpStore || (global._otpStore = new Map());
-
-async function getAuthUser() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
-  if (!token) return null;
-  try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch {
-    return null;
-  }
-}
 
 // POST /api/v1/user/set-password
 export async function POST(req) {

@@ -4,11 +4,28 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Dashboard() {
   const router = useRouter();
+  const { login, isLoggedIn } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // After a NextAuth OAuth redirect, sync the session to our public cookies
+  // so AuthContext (Navbar avatar, isLoggedIn state) picks up the user info.
+  useEffect(() => {
+    const alreadySynced = document.cookie.includes("isLoggedIn=true");
+    if (alreadySynced) return;
+    fetch("/api/auth/session-sync")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok) {
+          login({ name: d.name, image: d.image });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function fetchDashboard() {
