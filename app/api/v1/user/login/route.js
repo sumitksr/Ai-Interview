@@ -24,13 +24,17 @@ export async function POST(req) {
       expiresIn: "1d",
     });
 
-    const response = NextResponse.json({ message: "Login successful" }, { status: 200 });
+    const response = NextResponse.json({ message: "Login successful", name: user.name, image: user.image || "" }, { status: 200 });
     response.cookies.set("token", token, {
         path: "/",
         httpOnly: true,
         maxAge: 60 * 60 * 24, 
       });
     response.cookies.set("isLoggedIn", "true", {
+        path: "/",
+        maxAge: 60 * 60 * 24, 
+      });
+    response.cookies.set("userInfo", JSON.stringify({ name: user.name, image: user.image || "" }), {
         path: "/",
         maxAge: 60 * 60 * 24, 
       });

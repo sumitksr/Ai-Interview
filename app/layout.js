@@ -22,6 +22,16 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   const cookieStore = await cookies();
   const isLoggedIn = cookieStore.get("isLoggedIn")?.value === "true";
+  
+  let userInfo = null;
+  const userInfoCookie = cookieStore.get("userInfo")?.value;
+  if (userInfoCookie) {
+    try {
+      userInfo = JSON.parse(userInfoCookie);
+    } catch (e) {
+      console.error("Failed to parse userInfo cookie", e);
+    }
+  }
 
   return (
     <html
@@ -41,7 +51,7 @@ export default async function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full">
-        <AuthProvider initialLoginState={isLoggedIn}>
+        <AuthProvider initialLoginState={isLoggedIn} initialUserInfo={userInfo}>
           <Navbar />
           <main className="min-h-[calc(100vh-168px)]">{children}</main>
           <Footer />

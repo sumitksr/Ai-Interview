@@ -11,9 +11,30 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
+// Generate a vibrant avatar color from the user's name (like Google)
+const AVATAR_COLORS = [
+  ["#d32f2f", "#ef9a9a"], // red
+  ["#1565c0", "#90caf9"], // blue
+  ["#2e7d32", "#a5d6a7"], // green
+  ["#e65100", "#ffcc80"], // orange
+  ["#6a1b9a", "#ce93d8"], // purple
+  ["#00695c", "#80cbc4"], // teal
+  ["#ad1457", "#f48fb1"], // pink
+  ["#0277bd", "#81d4fa"], // light blue
+  ["#558b2f", "#c5e1a5"], // light green
+  ["#4527a0", "#b39ddb"], // deep purple
+];
+
+function getAvatarStyle(name) {
+  if (!name) return { background: "#1565c0", color: "#90caf9" };
+  const index = name.charCodeAt(0) % AVATAR_COLORS.length;
+  const [bg, text] = AVATAR_COLORS[index];
+  return { background: bg, color: text };
+}
+
 export default function Navbar() {
   const pathname = usePathname();
-  const { isLoggedIn: login, logout } = useAuth();
+  const { isLoggedIn: login, userInfo, logout } = useAuth();
 
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") {
@@ -133,9 +154,24 @@ export default function Navbar() {
             ):
             (
               <>
-              {/* // here will add image for gmail login and link to profile page */}
-                <Link href="/profile" className="btn-primary min-h-0 py-2.5 px-4 text-sm rounded-xl font-bold">
-                  Profile
+<Link
+                  href="/profile"
+                  title={userInfo?.name || "Profile"}
+                  style={!userInfo?.image ? getAvatarStyle(userInfo?.name) : {}}
+                  className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/20 hover:ring-white/50 hover:scale-110 transition-all duration-200 shadow-md flex-shrink-0"
+                >
+                  {userInfo?.image ? (
+                    <img
+                      src={userInfo.image}
+                      alt={userInfo.name || "Profile"}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-base font-bold tracking-wide select-none" style={{ fontFamily: "system-ui, sans-serif", letterSpacing: "0" }}>
+                      {userInfo?.name ? userInfo.name.trim().charAt(0).toUpperCase() : "?"}
+                    </span>
+                  )}
                 </Link>
                 <button
                   onClick={() => {

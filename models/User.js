@@ -1,4 +1,4 @@
-import  mongoose from 'mongoose';
+import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -11,6 +11,16 @@ const userSchema = new mongoose.Schema({
         unique: true,
     },
     password: {
+        type: String, // Optional for OAuth users
+    },
+    image: {
+        type: String, // Store profile picture URL
+        default: "",
+    },
+    googleId: {
+        type: String,
+    },
+    githubId: {
         type: String,
     },
     role: {
@@ -20,12 +30,7 @@ const userSchema = new mongoose.Schema({
     },
     refreshToken: {
         type: String,
-    },
-    role :{
-        type: String,
     }
-    
 }, { timestamps: true });
 
-export default mongoose.models.User ||
-mongoose.model("User", userSchema);
+export default mongoose.models.User || mongoose.model("User", userSchema);
