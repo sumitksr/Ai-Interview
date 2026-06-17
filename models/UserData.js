@@ -30,7 +30,11 @@ const userDataSchema = new mongoose.Schema(
                 type: Number,
             },
             resume: {
-                type: String,
+                type: String, // Cloudinary URL of the PDF
+            },
+            resumeText: {
+                type: String, // Parsed plain text of the resume (used for re-generation)
+                default: "",
             },
 
             questions: [

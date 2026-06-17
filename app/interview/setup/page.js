@@ -76,12 +76,38 @@ export default function InterviewSetup() {
 
     try {
       if (usePrevResume) {
-        localStorage.setItem("interviewContext", JSON.stringify({
-          targetRole: formData.targetRole,
-          experienceLevel: formData.experienceLevel,
-          focus: formData.focus,
-          resumeText: "PREVIOUS_RESUME",
-        }));
+        // Call the new endpoint — it fetches the stored resume text from DB and generates questions
+        const res = await fetch("/api/v1/interview/use-previous", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            targetRole: formData.targetRole,
+            experienceLevel: formData.experienceLevel,
+            focus: formData.focus,
+          }),
+        });
+
+        if (!res.ok) {
+          const result = await res.json();
+          throw new Error(
+            result.error ||
+              "Could not load previous resume. Please upload a new one."
+          );
+        }
+
+        const result = await res.json();
+
+        localStorage.setItem(
+          "interviewContext",
+          JSON.stringify({
+            targetRole: formData.targetRole,
+            experienceLevel: formData.experienceLevel,
+            focus: formData.focus,
+            resumeUrl: result.resumeUrl || "",
+            questions: result.questions,
+          })
+        );
+
         router.push("/interview/session");
         return;
       }

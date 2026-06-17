@@ -135,13 +135,14 @@ export async function POST(req) {
       feedback: ""
     }));
 
-    // Save the generated interview to the database
+    // Save the generated interview to the database (store both URL and text)
     await UserData.findOneAndUpdate(
       { user: authUser.id },
       { 
         $push: { 
           interviewHistory: { 
             resume: resumeUrl || "", 
+            resumeText: finalResumeText,
             questions: formattedQuestions 
           } 
         } 
