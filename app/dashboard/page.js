@@ -98,9 +98,9 @@ export default function Dashboard() {
   }));
 
   const latestInterview = recentInterviews[recentInterviews.length - 1];
-  const scoreChange = recentInterviews.length > 1 
-    ? (recentInterviews[recentInterviews.length - 1].score - recentInterviews[recentInterviews.length - 2].score)
-    : 0;
+  const latestScore = recentInterviews.length > 0 ? (recentInterviews[recentInterviews.length - 1].score || 0) : 0;
+  const previousScore = recentInterviews.length > 1 ? (recentInterviews[recentInterviews.length - 2].score || 0) : 0;
+  const scoreChange = recentInterviews.length > 1 ? (latestScore - previousScore) : 0;
 
   return (
     <div className="page-shell mx-auto max-w-7xl px-5 py-12 sm:px-8 relative">
