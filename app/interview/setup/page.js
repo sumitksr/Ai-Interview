@@ -14,6 +14,7 @@ export default function InterviewSetup() {
     targetRole: "",
     experienceLevel: "Mid",
     focus: "General",
+    questionCount: "5",
     resumeText: "",
   });
   const [resumeFile, setResumeFile] = useState(null);
@@ -84,6 +85,7 @@ export default function InterviewSetup() {
             targetRole: formData.targetRole,
             experienceLevel: formData.experienceLevel,
             focus: formData.focus,
+            questionCount: formData.questionCount,
           }),
         });
 
@@ -116,6 +118,7 @@ export default function InterviewSetup() {
       data.append("targetRole", formData.targetRole);
       data.append("experienceLevel", formData.experienceLevel);
       data.append("focus", formData.focus);
+      data.append("questionCount", formData.questionCount);
       if (resumeFile) {
         data.append("resumeFile", resumeFile);
       } else {
@@ -186,7 +189,7 @@ export default function InterviewSetup() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="soft-text text-sm font-bold uppercase tracking-wider block">Experience Level</label>
               <select
@@ -215,6 +218,21 @@ export default function InterviewSetup() {
                 <option value="Technical">Deep Technical / Coding</option>
                 <option value="Behavioral">Behavioral / Leadership</option>
                 <option value="System Design">System Architecture / Design</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="soft-text text-sm font-bold uppercase tracking-wider block">Number of Questions</label>
+              <select
+                name="questionCount"
+                value={formData.questionCount}
+                onChange={handleChange}
+                className="w-full bg-[var(--surface-2)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--foreground)] focus:outline-none focus:border-[var(--cyan)] transition-colors appearance-none"
+              >
+                <option value="3">3 Questions</option>
+                <option value="5">5 Questions</option>
+                <option value="7">7 Questions</option>
+                <option value="10">10 Questions</option>
               </select>
             </div>
           </div>

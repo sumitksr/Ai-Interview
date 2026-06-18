@@ -26,23 +26,60 @@ const userDataSchema = new mongoose.Schema(
                 default: Date.now,
             },
 
-            score: {
-                type: Number,
+            targetRole: { 
+                type: String, 
+                default: "" 
             },
-            resume: {
-                type: String, // Cloudinary URL of the PDF
+            experienceLevel: { 
+                type: String, 
+                default: "" 
             },
-            resumeText: {
-                type: String, // Parsed plain text of the resume (used for re-generation)
-                default: "",
+            focus: { 
+                type: String, 
+                default: "" 
+            },
+
+            score: { 
+                type: Number 
+            },
+            resume: { 
+                type: String, 
+                default: "" 
+            },      
+            resumeText: { 
+                type: String, default: "" 
+            },  
+
+            overallSummary: { 
+                type: String, default: "" 
+            },
+            strengths: [
+                { 
+                    type: String
+                }
+            ],
+            areasForImprovement: [
+                { 
+                    type: String 
+                }
+            ],
+            hiringRecommendation: { 
+                type: String, 
+                default: "" 
+            },
+            nextSteps: { 
+                type: String, 
+                default: "" 
             },
 
             questions: [
                 {
                     question: String,
                     answer: String,
-                    mistake: String,
+                    score: Number,
                     feedback: String,
+                    mistake: String,
+                    betterApproach: String,
                 },
             ],
         },

@@ -12,7 +12,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { targetRole, experienceLevel, focus } = await req.json();
+    const { targetRole, experienceLevel, focus, questionCount = "5" } = await req.json();
 
     if (!targetRole) {
       return NextResponse.json({ error: "targetRole is required" }, { status: 400 });
@@ -49,7 +49,7 @@ export async function POST(req) {
 
     // Generate fresh questions using the stored resume text
     const prompt = `
-      You are an expert technical interviewer. Based on the following candidate context and resume, generate 5 highly tailored interview questions.
+      You are an expert technical interviewer. Based on the following candidate context and resume, generate ${questionCount} highly tailored interview questions.
       
       Target Role: ${targetRole}
       Experience Level: ${experienceLevel}

@@ -80,30 +80,38 @@ Analyze each answer and provide a comprehensive assessment. Return a JSON object
     const rawAnalysis = completion.choices[0].message.content;
     const analysis = JSON.parse(rawAnalysis);
 
-    // Save to database
-    await connectDB();
+    const userId = authUser.id;
 
+    // Map the full per-question analysis
     const questionsForDB = analysis.questionAnalysis.map((qa) => ({
       question: qa.question,
       answer: qa.answer,
-      mistake: qa.mistake || "",
+      score: qa.score || 0,
       feedback: qa.feedback || "",
+      mistake: qa.mistake || "",
+      betterApproach: qa.betterApproach || "",
     }));
 
-    const userId = authUser.id;
-
     // Find or create UserData document
+    await connectDB();
     let userData = await UserData.findOne({ user: userId });
-
     if (!userData) {
       userData = new UserData({ user: userId });
     }
 
-    // Add new interview entry
+    // Push complete analysis entry
     userData.interviewHistory.push({
       date: new Date(),
+      targetRole: targetRole || "",
+      experienceLevel: experienceLevel || "",
+      focus: focus || "",
       score: analysis.overallScore,
       resume: resumeUrl || "",
+      overallSummary: analysis.overallSummary || "",
+      strengths: analysis.strengths || [],
+      areasForImprovement: analysis.areasForImprovement || [],
+      hiringRecommendation: analysis.hiringRecommendation || "",
+      nextSteps: analysis.nextSteps || "",
       questions: questionsForDB,
     });
 

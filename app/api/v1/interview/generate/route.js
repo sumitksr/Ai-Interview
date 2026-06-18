@@ -78,9 +78,11 @@ export async function POST(req) {
       return NextResponse.json({ error: "No resume content provided." }, { status: 400 });
     }
 
+    const questionCount = formData.get("questionCount") || "5";
+
     // Generate Questions with OpenAI
     const prompt = `
-      You are an expert technical interviewer. Based on the following candidate context and resume, generate 5 highly tailored interview questions.
+      You are an expert technical interviewer. Based on the following candidate context and resume, generate ${questionCount} highly tailored interview questions.
       
       Target Role: ${targetRole}
       Experience Level: ${experienceLevel}
