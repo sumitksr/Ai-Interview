@@ -34,8 +34,15 @@ export default function Signup() {
       }
 
       const data = await res.json();
-      login({ name: data.name, image: data.image });
-      router.push("/dashboard");
+      login({ name: data.name, image: data.image, role: data.role });
+      
+      if (data.role === "teacher") {
+        router.push("/mentor/dashboard");
+      } else if (data.role === "admin") {
+        router.push("/admin/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
       console.error(err);
       setError("An error occurred. Please try again.");

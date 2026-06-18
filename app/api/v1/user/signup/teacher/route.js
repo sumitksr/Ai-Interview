@@ -44,13 +44,20 @@ export async function POST(req) {
       expiresIn: "1d",
     });
 
-    const response = NextResponse.json({ message: "Teacher Signup successful" }, { status: 201 });
+    const response = NextResponse.json(
+      { message: "Teacher Signup successful", name: savedUser.name, image: savedUser.image || "", role: savedUser.role },
+      { status: 201 }
+    );
     response.cookies.set("token", token, {
       path: "/",
       httpOnly: true,
       maxAge: 60 * 60 * 24, 
     });
     response.cookies.set("isLoggedIn", "true", {
+      path: "/",
+      maxAge: 60 * 60 * 24, 
+    });
+    response.cookies.set("userInfo", JSON.stringify({ name: savedUser.name, image: savedUser.image || "", role: savedUser.role }), {
       path: "/",
       maxAge: 60 * 60 * 24, 
     });

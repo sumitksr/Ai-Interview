@@ -46,7 +46,7 @@ export async function POST(req) {
       path: "/",
       maxAge: 60 * 60 * 24, 
     });
-    response.cookies.set("userInfo", JSON.stringify({ name: newUser.name, image: newUser.image || "" }), {
+    response.cookies.set("userInfo", JSON.stringify({ name: newUser.name, image: newUser.image || "", role: newUser.role }), {
       path: "/",
       maxAge: 60 * 60 * 24, 
     });

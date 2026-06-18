@@ -13,8 +13,8 @@ export async function GET() {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 
-  const { name, image } = session.user;
-  const userInfo = JSON.stringify({ name: name || "", image: image || null });
+  const { name, image, role } = session.user;
+  const userInfo = JSON.stringify({ name: name || "", image: image || null, role: role || "user" });
 
   const res = NextResponse.json({ ok: true, name, image });
   res.cookies.set("isLoggedIn", "true", { path: "/", maxAge: 60 * 60 * 24 });

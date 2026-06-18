@@ -108,18 +108,27 @@ export default function Dashboard() {
         }
         return r.json();
       })
-      .then(d => {
-        setData(d);
-        // Only sync OAuth session cookie if we are truly authenticated
-        // but the isLoggedIn cookie is somehow missing (post-OAuth redirect case).
-        // This prevents session-sync from re-logging in a user who just logged out.
+      .then(async (d) => {
+        // Sync OAuth session cookie if needed before any redirects
         const hasLoginCookie = document.cookie.includes("isLoggedIn=true");
         if (!hasLoginCookie) {
-          fetch("/api/auth/session-sync")
-            .then(r => r.json())
-            .then(s => { if (s.ok) login({ name: s.name, image: s.image }); })
-            .catch(() => {});
+          try {
+            const r = await fetch("/api/auth/session-sync");
+            const s = await r.json();
+            if (s.ok) login({ name: s.name, image: s.image, role: s.role });
+          } catch (e) {}
         }
+
+        if (d.user?.role === "teacher") {
+          router.replace("/mentor/dashboard");
+          return;
+        }
+        if (d.user?.role === "admin") {
+          router.replace("/admin/dashboard");
+          return;
+        }
+        
+        setData(d);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

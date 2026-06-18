@@ -108,12 +108,17 @@ export default function Navbar() {
           {/* Desktop Links (Smooth Hover) */}
           <div className="hidden md:flex items-center gap-1.5 flex-1 justify-center">
             {links.map((link) => {
-              const isActive = pathname === link.href;
+              let href = link.href;
+              if (link.label === "Dashboard" && userInfo?.role) {
+                if (userInfo.role === "teacher") href = "/mentor/dashboard";
+                else if (userInfo.role === "admin") href = "/admin/dashboard";
+              }
+              const isActive = pathname.startsWith(href) && (href !== "/" || pathname === "/");
 
               return (
                 <Link
-                  key={link.href}
-                  href={link.href}
+                  key={link.label}
+                  href={href}
                   className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-out flex items-center justify-center ${
                     isActive 
                       ? "text-[var(--accent)] bg-[var(--accent-soft)]" 
@@ -230,11 +235,16 @@ export default function Navbar() {
           }`}>
             <div className="px-5 py-6 flex flex-col gap-2">
               {links.map((link) => {
-                const isActive = pathname === link.href;
+                let href = link.href;
+                if (link.label === "Dashboard" && userInfo?.role) {
+                  if (userInfo.role === "teacher") href = "/mentor/dashboard";
+                  else if (userInfo.role === "admin") href = "/admin/dashboard";
+                }
+                const isActive = pathname.startsWith(href) && (href !== "/" || pathname === "/");
                 return (
                   <Link
-                    key={link.href}
-                    href={link.href}
+                    key={link.label}
+                    href={href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`px-4 py-3 rounded-xl text-center text-sm font-semibold transition-all ${
                       isActive ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
