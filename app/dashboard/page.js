@@ -710,7 +710,9 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {mentors.map((teacher) => {
-              const availableCount = (teacher.availableSlots || []).filter((s) => !s.isBooked).length;
+              const availableCount = (teacher.availability || [])
+                .filter(a => !a.isUnavailable)
+                .reduce((total, a) => total + (a.slots || []).filter(s => !s.isBooked).length, 0);
               const avatarStyle = getAvatarStyle(teacher.user?.name);
               return (
                 <div key={teacher._id} className="bg-[var(--surface)]/60 backdrop-blur-md border border-[var(--border)] rounded-2xl p-5 hover:-translate-y-1 transition-all duration-300 flex flex-col gap-4">
