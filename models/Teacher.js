@@ -1,24 +1,5 @@
 import mongoose from "mongoose";
-
-const availableSlotSchema = new mongoose.Schema({
-  day: {
-    type: String,
-    enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
-    required: true,
-  },
-  startTime: {
-    type: String, // e.g. "10:00"
-    required: true,
-  },
-  endTime: {
-    type: String, // e.g. "11:00"
-    required: true,
-  },
-  isBooked: {
-    type: Boolean,
-    default: false,
-  },
-});
+import { availabilityEntrySchema } from "./Availability.js";
 
 const teacherSchema = new mongoose.Schema(
   {
@@ -48,17 +29,28 @@ const teacherSchema = new mongoose.Schema(
     fees: {
       type: Number,
       required: true,
+      default: 0,
     },
 
-    availableSlots: {
-      type: [availableSlotSchema],
+    /**
+     * Date-specific availability entries.
+     * Each entry covers one calendar date and holds
+     * its time slots + an optional "blocked" flag.
+     * Saturdays and Sundays within the next 20 days are
+     * auto-seeded with a default 10:00–11:00 slot by the
+     * GET /api/v1/teacher/availability endpoint.
+     */
+    availability: {
+      type: [availabilityEntrySchema],
       default: [],
     },
 
-    reviews: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Review",
-    }],
+    reviews: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Review",
+      },
+    ],
   },
   {
     timestamps: true,
