@@ -7,7 +7,7 @@ export default async function Home() {
     ["Depth", "76", "Technical detail"],
     ["Confidence", "81", "Delivery"],
   ];
-  // await connectDB();
+  await connectDB();
   
 
   return (
