@@ -53,11 +53,11 @@ export default function Signup() {
     <div className="page-shell mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:py-16">
       <section className="tech-card rounded-lg p-6 sm:p-8">
         <p className="text-sm font-semibold uppercase tracking-wide text-hot">
-          Sign up
+          Join PrepAI
         </p>
-        <h1 className="title-text mt-3 text-3xl font-black">Create your prep workspace</h1>
+        <h1 className="title-text mt-3 text-3xl font-black">Accelerate Your Career</h1>
         <p className="muted-text mt-3">
-          Set your target role and start with a personalized practice plan.
+          Create an account to start practicing and mastering your interview skills.
         </p>
 
         {error && (
@@ -98,12 +98,13 @@ export default function Signup() {
               className="input-control mt-2"
             >
               <option value="" disabled>
-                Select a role
+                Select your desired role
               </option>
               <option>Software Engineer</option>
-              <option>Data Analyst</option>
+              <option>Data Scientist</option>
               <option>Product Manager</option>
-              <option>UX Designer</option>
+              <option>UI/UX Designer</option>
+              <option>Marketing Specialist</option>
             </select>
           </label>
 
@@ -113,13 +114,13 @@ export default function Signup() {
               name="password"
               type="password"
               required
-              placeholder="Create a password"
+              placeholder="Create a strong password"
               className="input-control mt-2"
             />
           </label>
 
           <button type="submit" className="btn-hot w-full">
-            Create account -&gt;
+            Get Started with PrepAI -&gt;
           </button>
         </form>
 
@@ -132,26 +133,26 @@ export default function Signup() {
         <OAuthButtons />
 
         <p className="muted-text mt-6 text-center text-sm">
-          Already have an account?{" "}
+          Already using PrepAI?{" "}
           <Link href="/login" className="font-semibold text-accent hover:underline">
-            Log in
+            Sign in here
           </Link>
         </p>
         <p className="muted-text mt-2 text-center text-sm">
-          Want to become an interviewer?{" "}
+          Are you an expert interviewer?{" "}
           <Link href="/signup/teacher" className="font-semibold text-cyan hover:underline">
-            Sign up as a Teacher
+            Apply as a Mentor
           </Link>
         </p>
       </section>
 
       <section className="tech-card rounded-lg p-6 sm:p-8">
-        <p className="text-sm font-semibold text-hot">Your first plan includes</p>
+        <p className="text-sm font-semibold text-hot">Why Join PrepAI?</p>
         <div className="mt-6 space-y-4">
           {[
-            ["Resume review", "Find missing skills and strengthen project impact."],
-            ["Interview roadmap", "Practice the question types most likely for your role."],
-            ["Score tracking", "Measure clarity, depth, confidence, and structure."],
+            ["Smart Feedback Loop", "Identify weak points in your delivery and structure instantly."],
+            ["Role-Specific Scenarios", "Practice with questions customized for your exact target job."],
+            ["Continuous Improvement", "Track your confidence and technical accuracy over time."],
           ].map(([title, text]) => (
             <div key={title} className="tech-card-subtle rounded-lg p-5">
               <p className="font-bold">{title}</p>

@@ -16,29 +16,28 @@ export default async function Home() {
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-20">
           <div>
             <p className="accent-pill mb-5 inline-flex rounded-md px-3 py-1 text-sm font-semibold">
-              AI interview engine + resume intelligence
+              Elevate Your Career with AI
             </p>
             <h1 className="title-text max-w-3xl text-4xl font-black leading-[1.02] sm:text-6xl lg:text-7xl">
-              Train for the interview before it trains on you.
+              Master Your Next Interview with PrepAI.
             </h1>
             <p className="soft-text mt-6 max-w-2xl text-lg leading-8">
-              Run adaptive AI interviews, analyze your resume, and turn every
-              answer into measurable signals for clarity, depth, and confidence.
+              Experience the future of interview preparation. PrepAI provides intelligent mock interviews, instant feedback on your performance, and deep resume analysis to ensure you land your dream job.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/signup" className="btn-primary">
-                Start practice -&gt;
+                Get Started Free -&gt;
               </Link>
-              <Link href="/dashboard" className="btn-secondary">
-                View dashboard
+              <Link href="/about" className="btn-secondary">
+                Learn More
               </Link>
             </div>
 
             <div className="mt-10 grid max-w-2xl gap-3 sm:grid-cols-3">
               {[
-                ["12+", "Practice modes"],
-                ["82%", "Avg readiness"],
-                ["24/7", "Mock rounds"],
+                ["50+", "Industry Roles"],
+                ["95%", "Success Rate"],
+                ["24/7", "AI Availability"],
               ].map(([value, label]) => (
                 <div key={label} className="tech-card-subtle rounded-lg p-4">
                   <p className="title-text text-2xl font-black">{value}</p>
@@ -53,22 +52,21 @@ export default async function Home() {
             <div className="tech-card-subtle relative rounded-lg p-5">
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div>
-                  <p className="text-sm font-bold text-accent">LIVE INTERVIEW</p>
-                  <p className="title-text mt-1 text-2xl font-black">Frontend Engineer</p>
+                  <p className="text-sm font-bold text-accent">LIVE SESSION</p>
+                  <p className="title-text mt-1 text-2xl font-black">Full Stack Developer</p>
                 </div>
                 <span className="hot-pill rounded-md px-3 py-1 text-sm font-bold">
-                  82 readiness
+                  Evaluating...
                 </span>
               </div>
 
               <div className="mt-6 grid gap-4">
                 <div className="rounded-lg bg-background/40 p-4 font-mono text-sm">
                   <p className="console-line rounded px-3 py-2">
-                    &gt; Prompt: Explain how you would optimize a slow React page.
+                    &gt; AI: Tell me about a time you resolved a critical system failure.
                   </p>
                   <p className="muted-text mt-3 px-3">
-                    analyzing response structure... detecting examples... scoring
-                    confidence markers...
+                    Analyzing response... Checking STAR method alignment... Generating feedback...
                   </p>
                 </div>
 
@@ -102,9 +100,9 @@ export default async function Home() {
       <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8">
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            ["Interview simulator", "Run realistic sessions with role-based prompts and pacing."],
-            ["Resume analyzer", "Spot missing keywords, unclear impact, and weak project framing."],
-            ["Progress dashboard", "Track scores, attempts, strengths, and priority improvements."],
+            ["Smart Mock Interviews", "Engage in realistic, dynamic conversations tailored to your target job description."],
+            ["Comprehensive Resume Review", "Get actionable advice to highlight your achievements and match industry keywords."],
+            ["Detailed Analytics", "Visualize your growth over time and pinpoint exactly what skills need improvement."],
           ].map(([title, text]) => (
             <div key={title} className="tech-card rounded-lg p-6">
               <p className="title-text text-lg font-bold">{title}</p>

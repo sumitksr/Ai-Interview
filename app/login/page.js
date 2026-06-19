@@ -50,15 +50,15 @@ export default function Login() {
   return (
     <div className="page-shell mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[0.85fr_1fr] lg:items-center lg:py-16">
       <section className="tech-card hidden rounded-lg p-8 lg:block">
-        <p className="text-sm font-semibold text-accent">Welcome back</p>
+        <p className="text-sm font-semibold text-accent">Welcome back to PrepAI</p>
         <h1 className="title-text mt-3 text-4xl font-black leading-tight">
-          Continue where your last practice round left off.
+          Ready to continue your interview journey?
         </h1>
         <div className="mt-8 space-y-4">
           {[
-            ["Last score", "82%", "Frontend Engineer session"],
-            ["Next drill", "STAR storytelling", "Behavioral answer structure"],
-            ["Resume task", "Add metrics", "Strengthen project outcomes"],
+            ["Latest Assessment", "92%", "Senior React Developer"],
+            ["Recommended Practice", "System Design", "Focus on scalability"],
+            ["Resume Insight", "Highlight Impact", "Quantify your past achievements"],
           ].map(([label, value, note]) => (
             <div key={label} className="tech-card-subtle rounded-lg p-5">
               <p className="muted-text text-sm font-semibold">{label}</p>
@@ -73,9 +73,9 @@ export default function Login() {
         <p className="text-sm font-semibold uppercase tracking-wide text-accent">
           Log in
         </p>
-        <h2 className="title-text mt-3 text-3xl font-black">Access your dashboard</h2>
+        <h2 className="title-text mt-3 text-3xl font-black">Access PrepAI Workspace</h2>
         <p className="muted-text mt-3">
-          Enter your credentials to review interview sessions and resume feedback.
+          Sign in to view your progress, review past interviews, and start new mock sessions.
         </p>
 
         {error && (
@@ -110,7 +110,7 @@ export default function Login() {
           </label>
 
           <button type="submit" className="btn-primary w-full">
-            Log in -&gt;
+            Log in to PrepAI -&gt;
           </button>
         </form>
 
@@ -123,9 +123,9 @@ export default function Login() {
         <OAuthButtons />
 
         <p className="muted-text mt-6 text-center text-sm">
-          New here?{" "}
+          Don't have an account?{" "}
           <Link href="/signup" className="font-semibold text-accent hover:underline">
-            Create an account
+            Sign up for free
           </Link>
         </p>
       </section>
