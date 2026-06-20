@@ -10,6 +10,7 @@ const razorpay = new Razorpay({
 
 
 export async function POST(req) {
+  
   try {
     const authUser = await getAuthUser();
     if (!authUser) {

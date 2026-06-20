@@ -103,6 +103,26 @@ function BookingModal({ teacher, onClose, onBooked }) {
     if (!selectedDate || !selectedSlot) return;
     setBooking(true);
     try {
+      if (!teacher.fees || teacher.fees === 0 || teacher.fees === "0") {
+        // Direct booking without Razorpay
+        const verifyRes = await fetch("/api/v1/teacher/book", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            teacherId: teacher._id,
+            date: toMidnightUTC(selectedDate).toISOString(),
+            slotId: selectedSlot._id,
+            startTime: selectedSlot.startTime,
+            endTime: selectedSlot.endTime,
+          }),
+        });
+        const data = await verifyRes.json();
+        onBooked(verifyRes.ok ? { type: "success", message: data.message } : { type: "error", message: data.error || "Booking failed." });
+        setBooking(false);
+        onClose();
+        return;
+      }
+
       // 1. Create a Razorpay order
       const orderRes = await fetch("/api/v1/payment/create-order", {
         method: "POST",
@@ -201,8 +221,8 @@ function BookingModal({ teacher, onClose, onBooked }) {
             <h2 className="title-text font-black text-xl truncate">{teacher.user?.name}</h2>
             {teacher.bio && <p className="muted-text text-sm mt-0.5 line-clamp-1">{teacher.bio}</p>}
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[var(--cyan)] font-black text-lg">₹{teacher.fees}</span>
-              <span className="muted-text text-xs">/ session</span>
+              <span className="text-[var(--cyan)] font-black text-lg">{!teacher.fees || teacher.fees === 0 || teacher.fees === "0" ? "Free" : `₹${teacher.fees}`}</span>
+              <span className="muted-text text-xs">{!teacher.fees || teacher.fees === 0 || teacher.fees === "0" ? "" : "/ session"}</span>
               <span className="text-xs font-semibold text-emerald-400 ml-1">· {totalAvailable} slot{totalAvailable !== 1 ? "s" : ""} open</span>
             </div>
           </div>
@@ -377,8 +397,8 @@ function TeacherCard({ teacher, onBook }) {
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
           <div>
-            <span className="text-2xl font-black text-[var(--cyan)]">₹{teacher.fees}</span>
-            <span className="muted-text text-xs ml-1">/ session</span>
+            <span className="text-2xl font-black text-[var(--cyan)]">{!teacher.fees || teacher.fees === 0 || teacher.fees === "0" ? "Free" : `₹${teacher.fees}`}</span>
+            <span className="muted-text text-xs ml-1">{!teacher.fees || teacher.fees === 0 || teacher.fees === "0" ? "" : "/ session"}</span>
           </div>
           <button
             onClick={() => onBook(teacher)}

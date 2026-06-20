@@ -55,27 +55,39 @@ export async function POST(req) {
       );
     }
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return NextResponse.json(
-        { error: "Payment details are required" },
-        { status: 400 }
-      );
+    // ── 1. Fetch teacher ──────────────────────────────────────────────────────
+    const teacher = await Teacher.findById(teacherId).populate(
+      "user",
+      "name email"
+    );
+    if (!teacher) {
+      return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
     }
 
-    // Verify Razorpay signature
-    const generated_signature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET?.trim())
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
-      .digest("hex");
+    // ── 2. Payment verification ───────────────────────────────────────────────
+    if (teacher.fees && teacher.fees > 0) {
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return NextResponse.json(
+          { error: "Payment details are required" },
+          { status: 400 }
+        );
+      }
 
-    if (generated_signature !== razorpay_signature) {
-      return NextResponse.json(
-        { error: "Payment verification failed. Invalid signature." },
-        { status: 400 }
-      );
+      // Verify Razorpay signature
+      const generated_signature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET?.trim())
+        .update(razorpay_order_id + "|" + razorpay_payment_id)
+        .digest("hex");
+
+      if (generated_signature !== razorpay_signature) {
+        return NextResponse.json(
+          { error: "Payment verification failed. Invalid signature." },
+          { status: 400 }
+        );
+      }
     }
 
-    // ── 1. Validate the 20-day window ────────────────────────────────────────
+    // ── 3. Validate the 20-day window ────────────────────────────────────────
     const today = toMidnightUTC(new Date());
     const maxDate = new Date(today);
     maxDate.setUTCDate(maxDate.getUTCDate() + 19); // inclusive
@@ -87,15 +99,6 @@ export async function POST(req) {
         { error: "Bookings are only allowed within the next 20 days" },
         { status: 400 }
       );
-    }
-
-    // ── 2. Fetch teacher ──────────────────────────────────────────────────────
-    const teacher = await Teacher.findById(teacherId).populate(
-      "user",
-      "name email"
-    );
-    if (!teacher) {
-      return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
     }
 
     // ── 3. Find the availability entry for this date ──────────────────────────
@@ -152,6 +155,7 @@ export async function POST(req) {
     }
 
     // ── 6. Create booking ─────────────────────────────────────────────────────
+    const bookid = crypto.randomBytes(5).toString("hex");
     const booking = await Booking.create({
       user: authUser.id,
       teacher: teacherId,
@@ -160,6 +164,7 @@ export async function POST(req) {
       startTime: slot.startTime,
       endTime: slot.endTime,
       status: "confirmed",
+      bookid: bookid,
       razorpayOrderId: razorpay_order_id,
       razorpayPaymentId: razorpay_payment_id,
       razorpaySignature: razorpay_signature,
@@ -173,6 +178,8 @@ export async function POST(req) {
     await teacher.save();
 
     // ── 8. Send emails (non-blocking) ─────────────────────────────────────────
+    const meetingLink = `https://aceai.sumitksr.xyz/meet/${bookid}`;
+
     const dateLabel = targetDate.toLocaleDateString("en-IN", {
       weekday: "long",
       day: "numeric",
@@ -188,6 +195,7 @@ export async function POST(req) {
       day: dateLabel,
       startTime: slot.startTime,
       endTime: slot.endTime,
+      meetingLink,
     });
 
     sendBookingNotificationToTeacher({
@@ -198,6 +206,7 @@ export async function POST(req) {
       day: dateLabel,
       startTime: slot.startTime,
       endTime: slot.endTime,
+      meetingLink,
     });
 
     return NextResponse.json(
