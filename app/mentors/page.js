@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function toMidnightUTC(d) {
@@ -102,24 +103,71 @@ function BookingModal({ teacher, onClose, onBooked }) {
     if (!selectedDate || !selectedSlot) return;
     setBooking(true);
     try {
-      const res = await fetch("/api/v1/teacher/book", {
+      // 1. Create a Razorpay order
+      const orderRes = await fetch("/api/v1/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          teacherId: teacher._id,
-          date: toMidnightUTC(selectedDate).toISOString(),
-          slotId: selectedSlot._id,
-          startTime: selectedSlot.startTime,
-          endTime: selectedSlot.endTime,
-        }),
+        body: JSON.stringify({ teacherId: teacher._id }),
       });
-      const data = await res.json();
-      onBooked(res.ok ? { type: "success", message: data.message } : { type: "error", message: data.error || "Booking failed." });
-    } catch {
-      onBooked({ type: "error", message: "Network error. Please try again." });
-    } finally {
+      const orderData = await orderRes.json();
+      
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || "Failed to create order");
+      }
+
+      // 2. Initialize Razorpay checkout
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "AI Interview",
+        description: `Booking with ${orderData.teacherName}`,
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          // 3. Verify and confirm booking
+          try {
+            const verifyRes = await fetch("/api/v1/teacher/book", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                teacherId: teacher._id,
+                date: toMidnightUTC(selectedDate).toISOString(),
+                slotId: selectedSlot._id,
+                startTime: selectedSlot.startTime,
+                endTime: selectedSlot.endTime,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            const data = await verifyRes.json();
+            onBooked(verifyRes.ok ? { type: "success", message: data.message } : { type: "error", message: data.error || "Booking failed." });
+          } catch (error) {
+            onBooked({ type: "error", message: "Verification failed. Please contact support." });
+          } finally {
+            setBooking(false);
+            onClose();
+          }
+        },
+        theme: {
+          color: "#00e5ff", // matches cyan
+        },
+        modal: {
+          ondismiss: function () {
+            setBooking(false);
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function () {
+        setBooking(false);
+        onBooked({ type: "error", message: "Payment failed. Please try again." });
+      });
+      rzp.open();
+    } catch (error) {
       setBooking(false);
-      onClose();
+      onBooked({ type: "error", message: error.message || "Network error. Please try again." });
     }
   }
 
@@ -390,6 +438,7 @@ export default function MentorsPage() {
 
   return (
     <>
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div className="page-shell mx-auto max-w-7xl px-5 py-12 sm:px-8 relative min-h-[80vh]">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--cyan)]/4 rounded-full blur-[160px] -z-10 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[var(--accent)]/4 rounded-full blur-[140px] -z-10 pointer-events-none" />

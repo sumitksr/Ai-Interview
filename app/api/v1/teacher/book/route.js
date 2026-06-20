@@ -6,6 +6,8 @@ import {
   sendBookingNotificationToTeacher,
 } from "@/lib/sendBookingEmail";
 
+import crypto from "crypto";
+
 /** Return "YYYY-MM-DD" for any Date or ISO string — timezone-safe */
 function toDateKey(d) {
   const dt = new Date(d);
@@ -21,7 +23,7 @@ function toMidnightUTC(d) {
 /**
  * POST /api/v1/teacher/book
  *
- * Body: { teacherId, date (ISO string), slotId?, startTime?, endTime? }
+ * Body: { teacherId, date (ISO string), slotId?, startTime?, endTime?, razorpay_order_id, razorpay_payment_id, razorpay_signature }
  */
 export async function POST(req) {
   try {
@@ -35,11 +37,40 @@ export async function POST(req) {
 
     await connectDB();
 
-    const { teacherId, date: dateStr, slotId, startTime, endTime } = await req.json();
+    const {
+      teacherId,
+      date: dateStr,
+      slotId,
+      startTime,
+      endTime,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    } = await req.json();
 
     if (!teacherId || !dateStr || (!slotId && (!startTime || !endTime))) {
       return NextResponse.json(
         { error: "teacherId, date, and slotId (or start/endTime) are required" },
+        { status: 400 }
+      );
+    }
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return NextResponse.json(
+        { error: "Payment details are required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify Razorpay signature
+    const generated_signature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET?.trim())
+      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .digest("hex");
+
+    if (generated_signature !== razorpay_signature) {
+      return NextResponse.json(
+        { error: "Payment verification failed. Invalid signature." },
         { status: 400 }
       );
     }
@@ -129,6 +160,11 @@ export async function POST(req) {
       startTime: slot.startTime,
       endTime: slot.endTime,
       status: "confirmed",
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+      paymentStatus: "paid",
+      amountPaid: teacher.fees,
     });
 
     // ── 7. Mark slot as booked ────────────────────────────────────────────────
