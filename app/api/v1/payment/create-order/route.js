@@ -8,13 +8,9 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET?.trim(),
 });
 
-/**
- * POST /api/v1/payment/create-order
- *
- * Body: { teacherId }
- * Creates a Razorpay order for the teacher's session fee.
- */
+
 export async function POST(req) {
+  
   try {
     const authUser = await getAuthUser();
     if (!authUser) {

@@ -17,6 +17,11 @@ const bookingSchema = new mongoose.Schema(
       required: true,
     },
     // Slot details — denormalized for fast dashboard display
+    bookid: {
+      type: String,
+      unique: true,
+      default: "",
+    },
     slotId: {
       type: String,
       default: "",
