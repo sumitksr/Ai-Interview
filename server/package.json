@@ -1,0 +1,16 @@
+{
+  "name": "ai-interview-socket-server",
+  "version": "1.0.0",
+  "description": "Standalone Socket.IO WebRTC signaling server — deploy on Render",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

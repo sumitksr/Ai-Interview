@@ -202,7 +202,12 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
         // Still try to join room without local media
       }
 
-      sock = io(window.location.origin, { transports: ["websocket", "polling"] });
+      // Use NEXT_PUBLIC_SOCKET_URL for the deployed Render server,
+      // falls back to localhost:4000 in local dev
+      const socketUrl =
+        process.env.NEXT_PUBLIC_SOCKET_URL ||
+        (typeof window !== "undefined" ? `http://localhost:4000` : "");
+      sock = io(socketUrl, { transports: ["websocket", "polling"] });
       setSocket(sock);
 
       sock.emit("join-room", roomId, userId, userName);
