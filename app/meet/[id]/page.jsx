@@ -5,7 +5,6 @@ import Booking from "@/models/Booking";
 import mongoose from "mongoose";
 import MeetingRoom from "./MeetingRoom";
 
-/** Parse "HH:MM" into { h, m } */
 function parseTime(str = "") {
   const [h, m] = str.split(":").map(Number);
   return { h: h || 0, m: m || 0 };
