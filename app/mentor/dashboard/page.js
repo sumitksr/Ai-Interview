@@ -347,8 +347,13 @@ function AvailabilityTab() {
 }
 
 // ─── Bookings Tab ─────────────────────────────────────────────────────────────
-function BookingsTab({ bookings }) {
+function BookingsTab({ bookings, onReschedule }) {
   const [view, setView] = useState("upcoming");
+  const [rescheduleBooking, setRescheduleBooking] = useState(null); // booking being rescheduled
+  const [newStart, setNewStart] = useState("");
+  const [newEnd, setNewEnd] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [alert, setAlert] = useState(null);
   const now = new Date();
 
   const upcoming = bookings.filter(
@@ -360,6 +365,42 @@ function BookingsTab({ bookings }) {
   ).sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate));
 
   const list = view === "upcoming" ? upcoming : past;
+
+  function openReschedule(b) {
+    setRescheduleBooking(b);
+    setNewStart(b.startTime || "");
+    setNewEnd(b.endTime || "");
+    setAlert(null);
+  }
+
+  async function handleReschedule(e) {
+    e.preventDefault();
+    if (!newStart || !newEnd) { setAlert({ type: "error", msg: "Please fill in both times." }); return; }
+    if (newStart >= newEnd) { setAlert({ type: "error", msg: "End time must be after start time." }); return; }
+    setSaving(true);
+    setAlert(null);
+    try {
+      const res = await fetch("/api/v1/teacher/book/reschedule", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookingId: rescheduleBooking._id,
+          newStartTime: newStart,
+          newEndTime: newEnd,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAlert({ type: "error", msg: data.error || "Failed to reschedule." }); return; }
+      // Propagate update to parent so dashboard state stays in sync
+      onReschedule(rescheduleBooking._id, newStart, newEnd);
+      setAlert({ type: "success", msg: "Meeting time updated! Student has been notified by email. ✉️" });
+      setTimeout(() => setRescheduleBooking(null), 2000);
+    } catch {
+      setAlert({ type: "error", msg: "Something went wrong. Please try again." });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -389,6 +430,8 @@ function BookingsTab({ bookings }) {
               completed: "text-[var(--muted)] bg-[var(--surface-2)] border-[var(--border)]",
             }[b.status] || "";
 
+            const canReschedule = b.status === "confirmed" || b.status === "pending";
+
             return (
               <div key={b._id} className="flex items-center justify-between gap-3 px-5 py-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)]/60 backdrop-blur-md">
                 <div className="flex items-center gap-3 min-w-0">
@@ -404,10 +447,119 @@ function BookingsTab({ bookings }) {
                     <p className="text-xs text-[var(--muted)]">{b.user?.email}</p>
                   </div>
                 </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border flex-shrink-0 capitalize ${statusCls}`}>{b.status}</span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {view === "upcoming" && canReschedule && (
+                    <button
+                      onClick={() => openReschedule(b)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/15 transition-colors"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      Reschedule
+                    </button>
+                  )}
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-lg border capitalize ${statusCls}`}>{b.status}</span>
+                </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Reschedule Modal ── */}
+      {rescheduleBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#0a0f1c] border border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-7 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-200">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="font-black text-xl text-white">Reschedule Meeting</h2>
+                <p className="text-sm text-gray-400 mt-1">
+                  Student: <span className="text-white font-semibold">{rescheduleBooking.user?.name}</span>
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{formatDate(rescheduleBooking.scheduledDate)}</p>
+              </div>
+              <button
+                onClick={() => setRescheduleBooking(null)}
+                className="p-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+
+            {/* Current time */}
+            <div className="px-4 py-3 rounded-xl bg-white/5 border border-white/5 text-sm">
+              <span className="text-gray-500">Current time: </span>
+              <span className="text-gray-300 font-semibold line-through">{rescheduleBooking.startTime} – {rescheduleBooking.endTime}</span>
+            </div>
+
+            <form onSubmit={handleReschedule} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">New Start Time</span>
+                  <input
+                    type="time"
+                    value={newStart}
+                    onChange={e => setNewStart(e.target.value)}
+                    required
+                    className="input-control mt-2 w-full"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">New End Time</span>
+                  <input
+                    type="time"
+                    value={newEnd}
+                    onChange={e => setNewEnd(e.target.value)}
+                    required
+                    className="input-control mt-2 w-full"
+                  />
+                </label>
+              </div>
+
+              {/* Info note */}
+              <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-amber-400">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="flex-shrink-0 mt-0.5">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                </svg>
+                <span>Student will receive an email notification with the updated time. Meeting link opens 30 min before start and expires 1 hr after end.</span>
+              </div>
+
+              {alert && (
+                <div className={`px-4 py-3 rounded-xl border text-sm ${
+                  alert.type === "success"
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    : "bg-red-500/10 border-red-500/30 text-red-400"
+                }`}>
+                  {alert.msg}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setRescheduleBooking(null)}
+                  className="flex-1 py-3 rounded-xl border border-white/10 text-sm font-semibold text-gray-300 hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-sm font-bold text-[#0a0500] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20"
+                >
+                  {saving ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-current/40 border-t-current rounded-full animate-spin" />
+                      Updating…
+                    </span>
+                  ) : "Update & Notify Student"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
@@ -653,6 +805,18 @@ export default function MentorDashboard() {
     setData(prev => prev ? { ...prev, teacher: updatedTeacher } : prev);
   }, []);
 
+  const handleReschedule = useCallback((bookingId, newStartTime, newEndTime) => {
+    setData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        bookings: prev.bookings.map(b =>
+          b._id === bookingId ? { ...b, startTime: newStartTime, endTime: newEndTime } : b
+        ),
+      };
+    });
+  }, []);
+
   if (loading) return (
     <div className="page-shell flex flex-col items-center justify-center min-h-[70vh] gap-4">
       <div className="relative">
@@ -709,7 +873,7 @@ export default function MentorDashboard() {
       <div>
         {activeTab === "overview"     && <OverviewTab stats={stats} bookings={bookings} teacher={teacher} />}
         {activeTab === "availability" && <AvailabilityTab />}
-        {activeTab === "bookings"     && <BookingsTab bookings={bookings} />}
+        {activeTab === "bookings"     && <BookingsTab bookings={bookings} onReschedule={handleReschedule} />}
         {activeTab === "reviews"      && <ReviewsTab reviews={reviews} stats={stats} />}
         {activeTab === "pricing"      && <PricingTab teacher={teacher} onUpdate={handleTeacherUpdate} />}
         {activeTab === "profile"      && <ProfileTab teacher={teacher} onUpdate={handleTeacherUpdate} />}
