@@ -24,11 +24,21 @@ export async function POST(req) {
       expiresIn: "1d",
     });
 
+    const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "fallback_refresh_secret_key_for_development";
+    const refreshToken = jwt.sign({ id: user._id, role: user.role }, REFRESH_TOKEN_SECRET, {
+      expiresIn: "30d",
+    });
+
     const response = NextResponse.json({ message: "Login successful", name: user.name, image: user.image || "", role: user.role }, { status: 200 });
     response.cookies.set("token", token, {
         path: "/",
         httpOnly: true,
         maxAge: 60 * 60 * 24, 
+      });
+    response.cookies.set("refreshToken", refreshToken, {
+        path: "/",
+        httpOnly: true,
+        maxAge: 60 * 60 * 24 * 30, 
       });
     response.cookies.set("isLoggedIn", "true", {
         path: "/",

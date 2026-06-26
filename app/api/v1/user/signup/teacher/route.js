@@ -44,6 +44,11 @@ export async function POST(req) {
       expiresIn: "1d",
     });
 
+    const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "fallback_refresh_secret_key_for_development";
+    const refreshToken = jwt.sign({ id: savedUser._id, role: savedUser.role }, REFRESH_TOKEN_SECRET, {
+      expiresIn: "30d",
+    });
+
     const response = NextResponse.json(
       { message: "Teacher Signup successful", name: savedUser.name, image: savedUser.image || "", role: savedUser.role },
       { status: 201 }
@@ -52,6 +57,11 @@ export async function POST(req) {
       path: "/",
       httpOnly: true,
       maxAge: 60 * 60 * 24, 
+    });
+    response.cookies.set("refreshToken", refreshToken, {
+      path: "/",
+      httpOnly: true,
+      maxAge: 60 * 60 * 24 * 30, 
     });
     response.cookies.set("isLoggedIn", "true", {
       path: "/",

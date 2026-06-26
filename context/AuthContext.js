@@ -13,6 +13,63 @@ export function AuthProvider({ children, initialLoginState, initialUserInfo }) {
     setUserInfo(initialUserInfo);
   }, [initialLoginState, initialUserInfo]);
 
+  useEffect(() => {
+    // Setup global fetch interceptor for auto-refreshing tokens
+    const originalFetch = window.fetch;
+    let isRefreshing = false;
+    let refreshSubscribers = [];
+
+    const onRefreshed = (err) => {
+      refreshSubscribers.map((cb) => cb(err));
+      refreshSubscribers = [];
+    };
+
+    window.fetch = async (...args) => {
+      let response = await originalFetch(...args);
+      
+      const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
+      // If unauthorized and we're not calling auth-related endpoints directly
+      if (response.status === 401 && url && !url.includes('/api/v1/user/refresh') && !url.includes('/api/v1/user/login') && !url.includes('/api/v1/user/logout')) {
+        
+        if (!isRefreshing) {
+          isRefreshing = true;
+          try {
+            const refreshRes = await originalFetch("/api/v1/user/refresh", { method: "POST" });
+            if (refreshRes.ok) {
+              isRefreshing = false;
+              onRefreshed(null);
+              // Retry the original request
+              return originalFetch(...args);
+            } else {
+              isRefreshing = false;
+              onRefreshed(new Error("Refresh failed"));
+              // Optional: You could trigger logout here if desired
+              return response; 
+            }
+          } catch (err) {
+            isRefreshing = false;
+            onRefreshed(err);
+            return response;
+          }
+        } else {
+          // Wait for the ongoing refresh to finish
+          return new Promise((resolve) => {
+            refreshSubscribers.push((err) => {
+              if (err) resolve(response);
+              else resolve(originalFetch(...args));
+            });
+          });
+        }
+      }
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
+
+
   const login = (info) => {
     setIsLoggedIn(true);
     if (info) setUserInfo(info);
