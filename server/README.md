@@ -22,10 +22,10 @@ Standalone WebRTC signaling server. Deploy this folder separately on **Render**.
 | Key | Value |
 |---|---|
 | `PORT` | *(Render sets this automatically — leave blank)* |
-| `ALLOWED_ORIGINS` | Your Vercel URL e.g. `https://your-app.vercel.app` |
+| `ALLOWED_ORIGINS` | Your frontend URL e.g. `http://aceai.sumitksr.xyz/` |
 
-6. After deploy, copy the Render URL (e.g. `https://ai-interview-socket.onrender.com`)
-7. Set it as `NEXT_PUBLIC_SOCKET_URL` in your **Vercel project environment variables**
+6. After deploy, your Render URL is: `https://ai-interview-mst0.onrender.com`
+7. Set it as `NEXT_PUBLIC_SOCKET_URL` in your frontend environment variables
 
 ## Local Development
 

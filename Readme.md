@@ -2,32 +2,45 @@
 
 ![PrepAI Architecture](Architecture.png)
 
+## 🌐 Live Demo
+- **Frontend App**: [http://aceai.sumitksr.xyz/](http://aceai.sumitksr.xyz/)
+- **Backend (Socket Server)**: [https://ai-interview-mst0.onrender.com](https://ai-interview-mst0.onrender.com)
+
 ## 📖 Overview
 
 **PrepAI** is a cutting-edge interview preparation platform designed to help candidates land their dream jobs. By combining adaptive AI mock interviews with deep resume intelligence, PrepAI provides an all-in-one workspace to practice, analyze, and improve. 
 
 Whether you are targeting a role as a Software Engineer, Product Manager, or Data Analyst, the platform dynamically generates relevant technical and behavioral questions, evaluates your answers in real-time, and scores your delivery across multiple metrics.
 
-## ✨ Key Features
+## ✨ Comprehensive Feature Suite
 
-### 🎙️ Adaptive Mock Interviews
-- **Role-Specific Scenarios**: Dynamic prompts tailored to the exact role you are applying for.
-- **Voice & Text Input**: Answer naturally, just like a real interview.
-- **Real-Time Evaluation**: AI agents analyze your response structure (e.g., STAR method) and technical accuracy.
+### 🎙️ Immersive AI Mock Interviews
+Experience the pressure and realism of actual job interviews through our state-of-the-art AI simulations.
+- **Context-Aware Questioning**: The AI dynamically adapts its questions based on your resume, the target job description, and your previous answers, ensuring no two interviews are exactly the same.
+- **Multi-Modal Interaction**: Choose between typing your answers for technical assessments or using your microphone for behavioral rounds. Our advanced speech-to-text processing captures every nuance of your delivery.
+- **Instant Behavioral & Technical Feedback**: The AI evaluates your responses against industry standards, immediately identifying missing context, checking if you successfully applied the STAR (Situation, Task, Action, Result) method, and evaluating your technical accuracy.
 
-### 📄 Resume Intelligence
-- **Keyword Optimization**: Spots missing skills and keywords based on job descriptions.
-- **Impact Framing**: Suggests how to rewrite bullet points for maximum impact (using metrics and outcomes).
-- **Synergy Tracking**: Links your resume achievements directly to your mock interview answers.
+### 📄 Deep Resume Intelligence
+Your resume is your first impression. PrepAI breaks it down line-by-line to ensure it passes ATS (Applicant Tracking Systems) and catches recruiters' eyes.
+- **ATS Keyword Optimization**: Upload a target job description and your resume. The platform highlights missing critical keywords and suggests where to naturally incorporate them.
+- **Action-Oriented Impact Framing**: Weak bullet points are automatically detected. The AI suggests powerful, action-verb-driven rewrites that emphasize quantifiable metrics and business outcomes.
+- **Interview-Resume Synergy**: The platform actively connects your resume claims to your interview answers, ensuring your verbal narrative perfectly matches your written experience.
 
-### 📊 Progress Dashboard
-- **Score Tracking**: Measure your progress across Clarity, Depth, and Confidence.
-- **Detailed Feedback Loops**: Every session ends with a focused improvement target.
-- **Historical Analysis**: Review past attempts to visualize your growth over time.
+### 📊 Advanced Candidate Dashboard
+Track your growth with granular data visualization and actionable insights.
+- **Holistic Score Tracking**: Monitor your performance trends over time with aggregated scores for Clarity, Technical Depth, Confidence, and Communication skills.
+- **Actionable Feedback Loops**: After every session, receive a prioritized list of "Next Steps" and targeted micro-drills to fix specific weaknesses before your next attempt.
+- **Historical Session Playback**: Access transcripts and evaluations of your past interviews. Identify your filler words, pacing issues, and see how your answers have evolved.
 
-### 👥 Mentor Mode (Teacher Dashboard)
-- **Expert Review**: Industry professionals can sign up to review candidate performance.
-- **Custom Drills**: Mentors can assign specific focus areas and questions.
+### 👥 Mentor & Educator Portal
+A dedicated workspace for career coaches, mentors, and professors to guide candidates.
+- **Asynchronous Expert Review**: Mentors can review transcripts and evaluations of a candidate's mock interview and leave tailored feedback.
+- **Custom Curriculum Assignment**: Mentors can assign specific interview drill sets or customized focus areas to specific students.
+- **Cohort Analytics**: Monitor candidate progress and pinpoint common areas where they struggle to refine your coaching focus.
+
+### ⚡ Real-Time Socket Architecture
+- **Seamless Connectivity**: Built-in low-latency socket server ensures smooth, real-time signaling for voice processing and instantaneous AI chat responses.
+- **Scalable Infrastructure**: Deployed with a decoupled architecture (Next.js Frontend + Dedicated Node Socket Backend) to handle high concurrency effortlessly.
 
 ---
 
