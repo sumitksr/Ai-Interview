@@ -256,20 +256,40 @@ export default function Navbar() {
               })}
               <div className="h-px border-t border-[var(--border)] my-3"></div>
               
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 text-center text-[var(--muted)] hover:text-[var(--foreground)] text-sm font-semibold transition-colors"
-              >
-                Log in
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="btn-primary w-full py-3 px-5 text-sm rounded-xl text-center justify-center font-bold"
-              >
-                Get started
-              </Link>
+              {!login ? (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 text-center text-[var(--muted)] hover:text-[var(--foreground)] text-sm font-semibold transition-colors"
+                  >
+                    Log in
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="btn-primary w-full py-3 px-5 text-sm rounded-xl text-center justify-center font-bold"
+                  >
+                    Get started
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 text-center text-[var(--muted)] hover:text-[var(--foreground)] text-sm font-semibold transition-colors"
+                  >
+                    My Profile
+                  </Link>
+                  <button
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="btn-secondary w-full py-3 px-5 text-sm rounded-xl text-center justify-center font-bold"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}

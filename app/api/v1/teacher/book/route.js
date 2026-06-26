@@ -165,11 +165,11 @@ export async function POST(req) {
       endTime: slot.endTime,
       status: "confirmed",
       bookid: bookid,
-      razorpayOrderId: razorpay_order_id,
-      razorpayPaymentId: razorpay_payment_id,
-      razorpaySignature: razorpay_signature,
-      paymentStatus: "paid",
-      amountPaid: teacher.fees,
+      razorpayOrderId: razorpay_order_id || "",
+      razorpayPaymentId: razorpay_payment_id || "",
+      razorpaySignature: razorpay_signature || "",
+      paymentStatus: teacher.fees && teacher.fees > 0 ? "paid" : "free",
+      amountPaid: teacher.fees || 0,
     });
 
     // ── 7. Mark slot as booked ────────────────────────────────────────────────

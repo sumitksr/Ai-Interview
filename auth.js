@@ -54,7 +54,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               role: "user",
             });
             await dbUser.save();
-            sendWelcomeEmail(dbUser.email, dbUser.name);
+            sendWelcomeEmail(dbUser.email, dbUser.name).catch((e) => console.error("sendWelcomeEmail error:", e));
           } else {
             let changed = false;
             if (!dbUser.googleId) { dbUser.googleId = profile.sub; changed = true; }
@@ -82,7 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               role: "user",
             });
             await dbUser.save();
-            sendWelcomeEmail(dbUser.email, dbUser.name);
+            sendWelcomeEmail(dbUser.email, dbUser.name).catch((e) => console.error("sendWelcomeEmail error:", e));
           } else {
             let changed = false;
             if (!dbUser.githubId) { dbUser.githubId = githubId; changed = true; }

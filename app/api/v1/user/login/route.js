@@ -9,7 +9,7 @@ export async function POST(req) {
   try {
     const { email, password } = await req.json();
     await connectDB();
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${email.trim()}$`, "i") } });
 
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
@@ -24,7 +24,7 @@ export async function POST(req) {
       expiresIn: "1d",
     });
 
-    const response = NextResponse.json({ message: "Login successful", name: user.name, image: user.image || "" }, { status: 200 });
+    const response = NextResponse.json({ message: "Login successful", name: user.name, image: user.image || "", role: user.role }, { status: 200 });
     response.cookies.set("token", token, {
         path: "/",
         httpOnly: true,

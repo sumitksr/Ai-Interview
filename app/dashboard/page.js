@@ -743,8 +743,10 @@ export default function Dashboard() {
 
                   <div className="flex items-center justify-between mt-auto pt-3 border-t border-[var(--border)]">
                     <div>
-                      <span className="font-black text-[var(--cyan)]">₹{teacher.fees}</span>
-                      <span className="text-xs text-[var(--muted)] ml-1">/ session</span>
+                      <span className="font-black text-[var(--cyan)]">
+                        {!teacher.fees || teacher.fees === 0 ? "Free" : `₹${teacher.fees}`}
+                      </span>
+                      {teacher.fees > 0 && <span className="text-xs text-[var(--muted)] ml-1">/ session</span>}
                     </div>
                     <Link
                       href="/mentors"

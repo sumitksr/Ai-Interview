@@ -1,15 +1,13 @@
 import React from "react";
 import Link from "next/link";
-import {connectDB} from "../imports";
-export default async function Home() {
-  const metrics = [
-    ["Clarity", "88", "Answer flow"],
-    ["Depth", "76", "Technical detail"],
-    ["Confidence", "81", "Delivery"],
-  ];
-  await connectDB();
-  
 
+const METRICS = [
+  ["Clarity", "88", "Answer flow"],
+  ["Depth", "76", "Technical detail"],
+  ["Confidence", "81", "Delivery"],
+];
+
+export default function Home() {
   return (
     <div className="page-shell overflow-hidden">
       <section>
@@ -83,7 +81,7 @@ export default async function Home() {
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-3">
-                  {metrics.map(([item, score, note]) => (
+                  {METRICS.map(([item, score, note]) => (
                     <div key={item} className="tech-card-subtle rounded-lg p-4">
                       <p className="muted-text text-sm">{item}</p>
                       <p className="title-text mt-2 text-3xl font-black">{score}</p>
