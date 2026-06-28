@@ -11,7 +11,7 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
 
 // ── Simple HTTP server (health check + socket.io) ─────────────────────────────
 const httpServer = createServer((req, res) => {
-  if (req.url === "/health" || req.url === "/") {
+  if (req.url === "/health" || req.url === "/" || req.url === "/check") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({

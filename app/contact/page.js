@@ -8,7 +8,7 @@ const contactInfo = [
       </svg>
     ),
     label: "Email Support",
-    value: "help@aceai.dev",
+    value: "sumitksr4156@gmail.com",
     sub: "We reply within 1 business day",
     color: "var(--accent)",
   },

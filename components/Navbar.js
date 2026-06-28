@@ -88,6 +88,7 @@ export default function Navbar() {
             : {
                 background: "color-mix(in srgb, var(--surface) 80%, transparent)",
                 backdropFilter: "blur(20px)",
+                border: "1px solid transparent",
                 borderBottom: "1px solid var(--border)",
               }
         }

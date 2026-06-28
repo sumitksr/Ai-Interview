@@ -102,7 +102,7 @@ export default function TeacherSignup() {
           </label>
 
           <label className="block">
-            <span className="soft-text text-sm font-semibold">Hourly Fee ($)</span>
+            <span className="soft-text text-sm font-semibold">Hourly Fee (₹)</span>
             <input
               name="fees"
               type="number"

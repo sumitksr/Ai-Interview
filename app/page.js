@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useEffect } from "react";
 import Link from "next/link";
 
 /* ─── Static data ────────────────────────────────────────────────── */
@@ -78,7 +80,6 @@ const STEPS = [
 const TESTIMONIALS = [
   {
     name: "Priya Sharma",
-    role: "Software Engineer @ Google",
     initials: "PS",
     text: "Ace AI flagged that I was overusing filler words and my STAR answers lacked specific timelines. I fixed both — and got the offer.",
     stars: 5,
@@ -86,7 +87,6 @@ const TESTIMONIALS = [
   },
   {
     name: "Arjun Mehta",
-    role: "Data Scientist @ Microsoft",
     initials: "AM",
     text: "The resume intelligence feature surfaced 3 skills I had but wasn't highlighting. My callback rate jumped from 15% to 60% in two weeks.",
     stars: 5,
@@ -94,7 +94,6 @@ const TESTIMONIALS = [
   },
   {
     name: "Sara Kim",
-    role: "Product Manager @ Stripe",
     initials: "SK",
     text: "50+ mock PM interviews with Ace AI. By the time I sat in my real interviews I was calm, structured, and completely confident.",
     stars: 5,
@@ -103,6 +102,14 @@ const TESTIMONIALS = [
 ];
 
 export default function Home() {
+  useEffect(() => {
+    // Wake up socket server
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    if (socketUrl) {
+      fetch(`${socketUrl}/check`).catch(() => {});
+    }
+  }, []);
+
   return (
     <div className="page-shell">
 
@@ -236,24 +243,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          COMPANY TRUST STRIP
-      ───────────────────────────────────────────────────────────── */}
-      <div style={{ borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 py-8">
-          <p className="muted-text text-xs font-semibold uppercase tracking-widest text-center mb-5">
-            Candidates have landed offers at
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-8">
-            {["Google", "Microsoft", "Amazon", "Meta", "Stripe", "OpenAI", "Flipkart"].map((c) => (
-              <span key={c} className="muted-text text-base font-black tracking-tight hover:text-[var(--accent)] transition-colors cursor-default">
-                {c}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* ─────────────────────────────────────────────────────────────
           FEATURES — 2×2 grid
@@ -407,7 +396,7 @@ export default function Home() {
           <p className="soft-text mt-3 text-base">From candidates who prepared with Ace AI and landed the job.</p>
         </div>
         <div className="grid gap-5 md:grid-cols-3">
-          {TESTIMONIALS.map(({ name, role, initials, text, stars, color }) => (
+          {TESTIMONIALS.map(({ name, initials, text, stars, color }) => (
             <div key={name} className="testimonial-card flex flex-col justify-between gap-5">
               {/* Stars */}
               <div className="flex gap-1">
@@ -427,7 +416,6 @@ export default function Home() {
                 </div>
                 <div>
                   <p className="title-text text-sm font-bold">{name}</p>
-                  <p className="muted-text text-xs">{role}</p>
                 </div>
               </div>
             </div>
