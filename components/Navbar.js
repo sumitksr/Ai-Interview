@@ -12,22 +12,21 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
-// Generate a vibrant avatar color from the user's name (like Google)
 const AVATAR_COLORS = [
-  ["#d32f2f", "#ef9a9a"], // red
-  ["#1565c0", "#90caf9"], // blue
-  ["#2e7d32", "#a5d6a7"], // green
-  ["#e65100", "#ffcc80"], // orange
-  ["#6a1b9a", "#ce93d8"], // purple
-  ["#00695c", "#80cbc4"], // teal
-  ["#ad1457", "#f48fb1"], // pink
-  ["#0277bd", "#81d4fa"], // light blue
-  ["#558b2f", "#c5e1a5"], // light green
-  ["#4527a0", "#b39ddb"], // deep purple
+  ["#7c3aed", "#c4b8f0"],
+  ["#1565c0", "#90caf9"],
+  ["#10b981", "#a7f3d0"],
+  ["#e65100", "#ffcc80"],
+  ["#6a1b9a", "#ce93d8"],
+  ["#0891b2", "#a5f3fc"],
+  ["#db2777", "#fbcfe8"],
+  ["#0277bd", "#81d4fa"],
+  ["#558b2f", "#c5e1a5"],
+  ["#4527a0", "#b39ddb"],
 ];
 
 function getAvatarStyle(name) {
-  if (!name) return { background: "#1565c0", color: "#90caf9" };
+  if (!name) return { background: "#7c3aed", color: "#c4b8f0" };
   const index = name.charCodeAt(0) % AVATAR_COLORS.length;
   const [bg, text] = AVATAR_COLORS[index];
   return { background: bg, color: text };
@@ -37,18 +36,19 @@ export default function Navbar() {
   const pathname = usePathname();
   const { isLoggedIn: login, userInfo, logout } = useAuth();
 
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") {
-      return "dark";
-    }
-
-    return window.localStorage.getItem("ai-interview-theme") === "light"
-      ? "light"
-      : "dark";
-  });
-
+  // Always start with "dark" on server — useEffect will sync from localStorage on client
+  const [theme, setTheme] = useState("dark");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    // Sync initial theme from localStorage after hydration
+    const stored = window.localStorage.getItem("ai-interview-theme");
+    if (stored && stored !== theme) {
+      setTheme(stored);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -56,57 +56,81 @@ export default function Navbar() {
   }, [theme]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   function toggleTheme() {
-    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
+    setTheme((t) => (t === "dark" ? "light" : "dark"));
   }
 
   return (
-    <div 
+    <div
       className={`sticky top-0 z-50 flex justify-center w-full transition-all duration-300 ease-out ${
-        isScrolled ? "pt-4 px-4 border-b border-transparent bg-transparent" : "pt-0 px-0 bg-[var(--surface)]/80 backdrop-blur-md border-b border-[var(--border)]/50"
+        isScrolled ? "pt-3 px-4" : "pt-0 px-0"
       }`}
     >
       <header
-        className={`w-full transition-all duration-300 ease-out relative ${
+        className={`w-full transition-all duration-300 ease-out ${
           isScrolled
-            ? "max-w-4xl rounded-2xl bg-[var(--surface)]/70 backdrop-blur-md border border-[var(--border)] shadow-lg py-2.5 px-4"
-            : "max-w-7xl py-5 px-5 sm:px-8 border border-transparent"
+            ? "max-w-4xl rounded-2xl py-2.5 px-5 shadow-2xl"
+            : "max-w-7xl py-4 px-5 sm:px-8"
         }`}
+        style={
+          isScrolled
+            ? {
+                background: "color-mix(in srgb, var(--surface) 84%, transparent)",
+                backdropFilter: "blur(24px)",
+                border: "1px solid var(--border)",
+                boxShadow: "0 8px 40px rgba(0,0,0,0.3), var(--shadow-glow)",
+              }
+            : {
+                background: "color-mix(in srgb, var(--surface) 80%, transparent)",
+                backdropFilter: "blur(20px)",
+                borderBottom: "1px solid var(--border)",
+              }
+        }
       >
-        <nav className="flex items-center justify-between">
-          
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 md:gap-4 group" aria-label="AI Interview Platform home">
-            <div className={`brand-mark grid place-items-center rounded-xl font-bold transition-all duration-300 ease-out group-hover:scale-105 ${
-              isScrolled ? "h-9 w-9" : "h-10 w-10"
-            }`}>
-              <svg width={isScrolled ? "18" : "20"} height={isScrolled ? "18" : "20"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <nav className="flex items-center justify-between gap-4">
+
+          {/* ── Logo ── */}
+          <Link href="/" className="flex items-center gap-3 group flex-shrink-0" aria-label="Ace AI home">
+            <div
+              className={`brand-mark grid place-items-center rounded-xl font-bold transition-all duration-300 group-hover:scale-110 ${
+                isScrolled ? "h-9 w-9" : "h-10 w-10"
+              }`}
+            >
+              {/* Sparkle / Brain icon */}
+              <svg width={isScrolled ? "17" : "19"} height={isScrolled ? "17" : "19"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                <path d="M5 3v4" strokeWidth="1.5"/><path d="M19 17v4" strokeWidth="1.5"/><path d="M3 5h4" strokeWidth="1.5"/><path d="M17 19h4" strokeWidth="1.5"/>
               </svg>
             </div>
-            <div className="hidden sm:flex flex-col justify-center">
+            <div className="flex flex-col leading-none">
+              <span
+                className={`font-black tracking-tight transition-all duration-300 ${
+                  isScrolled ? "text-base" : "text-[1.15rem]"
+                }`}
+                style={{
+                  background: "linear-gradient(135deg, var(--accent), var(--cyan))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Ace AI
+              </span>
               {!isScrolled && (
-                <span className="text-[10px] font-extrabold tracking-[0.2em] text-[var(--accent)] uppercase leading-none mb-1 transition-colors group-hover:text-[var(--cyan)]">
-                  Interview
+                <span className="text-[9px] font-semibold tracking-[0.18em] uppercase mt-0.5" style={{ color: "var(--muted)" }}>
+                  Interview Coach
                 </span>
               )}
-              <span className={`title-text font-black leading-none tracking-tight transition-all duration-300 ease-out ${
-                isScrolled ? "text-lg" : "text-[1.1rem]"
-              }`}>
-                Platform
-              </span>
             </div>
           </Link>
 
-          {/* Desktop Links (Smooth Hover) */}
-          <div className="hidden md:flex items-center gap-1.5 flex-1 justify-center">
+          {/* ── Desktop Links ── */}
+          <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
             {links.map((link) => {
               let href = link.href;
               if (link.label === "Dashboard" && userInfo?.role) {
@@ -114,126 +138,121 @@ export default function Navbar() {
                 else if (userInfo.role === "admin") href = "/admin/dashboard";
               }
               const isActive = pathname.startsWith(href) && (href !== "/" || pathname === "/");
-
               return (
                 <Link
                   key={link.label}
                   href={href}
-                  className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ease-out flex items-center justify-center ${
-                    isActive 
-                      ? "text-[var(--accent)] bg-[var(--accent-soft)]" 
+                  className={`relative px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? "text-[var(--accent)] bg-[var(--accent-soft)]"
                       : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
                   }`}
                 >
+                  {isActive && (
+                    <span
+                      className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-4 rounded-full"
+                      style={{ background: "var(--accent)" }}
+                    />
+                  )}
                   {link.label}
                 </Link>
               );
             })}
           </div>
 
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-3">
+          {/* ── Desktop Actions ── */}
+          <div className="hidden md:flex items-center gap-2.5 flex-shrink-0">
             <button
               type="button"
               onClick={toggleTheme}
-              className="theme-toggle w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-105"
+              className="theme-toggle w-9 h-9 flex items-center justify-center rounded-full transition-all hover:scale-110"
               title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             >
               {theme === "dark" ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
               )}
             </button>
 
-            <div className="w-px h-5 border-l border-border hidden lg:block"></div>
-              {!login ? (
-                <>
-                <Link href="/login" className="nav-link text-sm font-semibold transition-colors hover:text-[var(--foreground)] px-2">
+            <div className="w-px h-5 bg-[var(--border)] hidden lg:block" />
+
+            {!login ? (
+              <>
+                <Link href="/login" className="nav-link text-sm font-semibold px-3 py-2 rounded-lg transition-all hover:text-[var(--foreground)] hover:bg-[var(--accent-soft)]">
                   Log in
                 </Link>
-              
-                <Link href="/signup" className="btn-primary min-h-0 py-2.5 px-4 text-sm rounded-xl font-bold">
-                  Get started
+                <Link href="/signup" className="btn-primary min-h-0 py-2 px-5 text-sm rounded-xl font-bold">
+                  Get started →
                 </Link>
-                </>
-            ):
-            (
+              </>
+            ) : (
               <>
-<Link
+                <Link
                   href="/profile"
                   title={userInfo?.name || "Profile"}
                   style={!userInfo?.image ? getAvatarStyle(userInfo?.name) : {}}
-                  className="flex items-center justify-center w-10 h-10 rounded-full overflow-hidden ring-2 ring-white/20 hover:ring-white/50 hover:scale-110 transition-all duration-200 shadow-md flex-shrink-0"
+                  className="flex items-center justify-center w-9 h-9 rounded-full overflow-hidden ring-2 ring-[var(--border)] hover:ring-[var(--accent)] hover:scale-110 transition-all duration-200 shadow-md flex-shrink-0"
                 >
                   {userInfo?.image ? (
-                    <img
-                      src={userInfo.image}
-                      alt={userInfo.name || "Profile"}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={userInfo.image} alt={userInfo.name || "Profile"} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-base font-bold tracking-wide select-none" style={{ fontFamily: "system-ui, sans-serif", letterSpacing: "0" }}>
+                    <span className="text-sm font-bold select-none">
                       {userInfo?.name ? userInfo.name.trim().charAt(0).toUpperCase() : "?"}
                     </span>
                   )}
                 </Link>
                 <button
-                  onClick={() => {
-                    logout()
-                  }}
-                  className="btn-secondary min-h-0 py-2.5 px-4 text-sm rounded-xl font-bold"
+                  onClick={() => logout()}
+                  className="btn-secondary min-h-0 py-2 px-4 text-sm rounded-xl font-bold"
                 >
                   Logout
                 </button>
               </>
-            
-            )
-            }
+            )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* ── Mobile Controls ── */}
           <div className="md:hidden flex items-center gap-2">
             <button
               type="button"
               onClick={toggleTheme}
-              className="theme-toggle w-9 h-9 flex items-center justify-center rounded-full transition-colors"
+              className="theme-toggle w-9 h-9 flex items-center justify-center rounded-full transition-all"
             >
               {theme === "dark" ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
               )}
             </button>
-
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)] transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-xl text-[var(--muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] transition-all"
+              aria-label="Toggle menu"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 {mobileMenuOpen ? (
-                  <>
-                    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                  </>
+                  <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>
                 ) : (
-                  <>
-                    <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
-                  </>
+                  <><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></>
                 )}
               </svg>
             </button>
           </div>
         </nav>
 
-        {/* Mobile Menu Dropdown */}
+        {/* ── Mobile Dropdown ── */}
         {mobileMenuOpen && (
-          <div className={`absolute left-0 right-0 bg-[var(--surface)]/95 backdrop-blur-xl md:hidden overflow-hidden transition-all duration-300 ${
-            isScrolled 
-              ? "top-[calc(100%+0.5rem)] rounded-2xl border border-[var(--border)] shadow-2xl" 
-              : "top-full border-b border-[var(--border)] shadow-xl"
-          }`}>
-            <div className="px-5 py-6 flex flex-col gap-2">
+          <div
+            className="absolute left-0 right-0 md:hidden overflow-hidden mt-2 mx-2 rounded-2xl"
+            style={{
+              background: "color-mix(in srgb, var(--surface) 96%, transparent)",
+              backdropFilter: "blur(24px)",
+              border: "1px solid var(--border)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+            }}
+          >
+            <div className="px-4 py-5 flex flex-col gap-1.5">
               {links.map((link) => {
                 let href = link.href;
                 if (link.label === "Dashboard" && userInfo?.role) {
@@ -247,44 +266,35 @@ export default function Navbar() {
                     href={href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`px-4 py-3 rounded-xl text-center text-sm font-semibold transition-all ${
-                      isActive ? "bg-[var(--accent-soft)] text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
+                      isActive
+                        ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                        : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-2)]"
                     }`}
                   >
                     {link.label}
                   </Link>
                 );
               })}
-              <div className="h-px border-t border-[var(--border)] my-3"></div>
-              
+
+              <div className="h-px bg-[var(--border)] my-2" />
+
               {!login ? (
                 <>
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 text-center text-[var(--muted)] hover:text-[var(--foreground)] text-sm font-semibold transition-colors"
-                  >
+                  <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-center text-[var(--muted)] hover:text-[var(--accent)] text-sm font-semibold transition-colors rounded-xl">
                     Log in
                   </Link>
-                  <Link
-                    href="/signup"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="btn-primary w-full py-3 px-5 text-sm rounded-xl text-center justify-center font-bold"
-                  >
-                    Get started
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)} className="btn-primary w-full py-3 text-sm rounded-xl text-center font-bold">
+                    Get started →
                   </Link>
                 </>
               ) : (
                 <>
-                  <Link
-                    href="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-3 text-center text-[var(--muted)] hover:text-[var(--foreground)] text-sm font-semibold transition-colors"
-                  >
+                  <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 text-center text-[var(--muted)] hover:text-[var(--accent)] text-sm font-semibold transition-colors rounded-xl">
                     My Profile
                   </Link>
                   <button
                     onClick={() => { logout(); setMobileMenuOpen(false); }}
-                    className="btn-secondary w-full py-3 px-5 text-sm rounded-xl text-center justify-center font-bold"
+                    className="btn-secondary w-full py-3 text-sm rounded-xl font-bold"
                   >
                     Logout
                   </button>
