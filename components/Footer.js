@@ -43,11 +43,7 @@ export default function Footer() {
               <div
                 className="brand-mark grid place-items-center rounded-xl h-10 w-10 flex-shrink-0 transition-transform group-hover:scale-110"
               >
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                  <path d="M5 3v4" strokeWidth="1.5"/><path d="M19 17v4" strokeWidth="1.5"/>
-                  <path d="M3 5h4" strokeWidth="1.5"/><path d="M17 19h4" strokeWidth="1.5"/>
-                </svg>
+                <img src="/ace-icon.svg" alt="Ace AI" width="24" height="24" style={{ display: "block" }} />
               </div>
               <span
                 className="text-xl font-black tracking-tight"

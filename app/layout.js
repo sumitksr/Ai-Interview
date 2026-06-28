@@ -18,6 +18,10 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Ace AI — Your AI-Powered Interview Coach",
   description: "Ace AI helps you master interviews with AI-powered mock sessions, instant feedback, resume analysis, and expert mentors. Land your dream job faster.",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default async function RootLayout({ children }) {
