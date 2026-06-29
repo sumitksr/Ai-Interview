@@ -12,16 +12,20 @@ function parseTime(str = "") {
 
 /**
  * Build a Date from a scheduledDate + "HH:MM" string.
- * scheduledDate is stored at midnight UTC, so we combine it with
- * the local hour/minute offsets to get the correct wall-clock time.
+ * scheduledDate is stored at midnight UTC.
+ * We assume timeStr is in IST (Asia/Kolkata).
  */
 function buildDateTime(scheduledDate, timeStr) {
-  const base = new Date(scheduledDate);
   const { h, m } = parseTime(timeStr);
-  // Set the hours and minutes in local time (timeStr is meant to be local time)
-  const d = new Date(base);
-  d.setHours(h, m, 0, 0);
-  return d;
+  const dateObj = new Date(scheduledDate);
+  const year = dateObj.getUTCFullYear();
+  const month = String(dateObj.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getUTCDate()).padStart(2, "0");
+  const hh = String(h).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+  
+  // Construct an ISO string for IST (+05:30)
+  return new Date(`${year}-${month}-${day}T${hh}:${mm}:00+05:30`);
 }
 
 export default async function MeetPage({ params }) {
@@ -80,7 +84,7 @@ export default async function MeetPage({ params }) {
     const expireAt = new Date(meetEnd.getTime()   + 60 * 60 * 1000);  // 1 hr after end
 
     const formattedDate = new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
-      weekday: "long", year: "numeric", month: "long", day: "numeric",
+      weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Kolkata",
     });
 
     if (now < openAt) {
@@ -98,7 +102,7 @@ export default async function MeetPage({ params }) {
             <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-1 text-sm mb-6">
               <p className="text-gray-400">{formattedDate}</p>
               <p className="text-white font-bold text-lg">{booking.startTime} – {booking.endTime}</p>
-              <p className="text-teal-400 text-xs">Room opens at {openAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+              <p className="text-teal-400 text-xs">Room opens at {openAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</p>
             </div>
             <a href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 font-semibold text-sm hover:bg-teal-500/15 transition-colors">
               ← Back to Dashboard
@@ -123,7 +127,7 @@ export default async function MeetPage({ params }) {
             <div className="bg-white/5 rounded-2xl p-4 border border-white/5 space-y-1 text-sm mb-6">
               <p className="text-gray-400">{formattedDate}</p>
               <p className="text-white font-bold text-lg">{booking.startTime} – {booking.endTime}</p>
-              <p className="text-red-400 text-xs">Link expired at {expireAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+              <p className="text-red-400 text-xs">Link expired at {expireAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</p>
             </div>
             <a href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold text-sm hover:bg-white/10 transition-colors">
               ← Back to Dashboard
