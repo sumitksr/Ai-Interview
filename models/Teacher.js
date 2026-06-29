@@ -1,6 +1,15 @@
 import mongoose from "mongoose";
 import { availabilityEntrySchema } from "./Availability.js";
 
+const workExperienceSchema = new mongoose.Schema({
+  position: { type: String, required: true },
+  company: { type: String, required: true },
+  startDate: { type: String, required: true },
+  endDate: { type: String, default: "" },
+  isCurrent: { type: Boolean, default: false },
+  description: { type: String, default: "" },
+});
+
 const teacherSchema = new mongoose.Schema(
   {
     user: {
@@ -42,6 +51,11 @@ const teacherSchema = new mongoose.Schema(
      */
     availability: {
       type: [availabilityEntrySchema],
+      default: [],
+    },
+
+    workExperiences: {
+      type: [workExperienceSchema],
       default: [],
     },
 

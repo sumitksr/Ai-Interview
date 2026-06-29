@@ -219,6 +219,11 @@ function BookingModal({ teacher, onClose, onBooked }) {
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="title-text font-black text-xl truncate">{teacher.user?.name}</h2>
+            {teacher.workExperiences?.length > 0 && (
+              <p className="text-[var(--accent)] text-sm font-semibold truncate mt-0.5">
+                {teacher.workExperiences.find(w => w.isCurrent)?.position || teacher.workExperiences[0].position} @ {teacher.workExperiences.find(w => w.isCurrent)?.company || teacher.workExperiences[0].company}
+              </p>
+            )}
             {teacher.bio && <p className="muted-text text-sm mt-0.5 line-clamp-1">{teacher.bio}</p>}
             <div className="flex items-center gap-2 mt-1.5">
               <span className="text-[var(--cyan)] font-black text-lg">{!teacher.fees || teacher.fees === 0 || teacher.fees === "0" ? "Free" : `₹${teacher.fees}`}</span>
@@ -342,6 +347,7 @@ function BookingModal({ teacher, onClose, onBooked }) {
 
 // ─── Teacher Card ─────────────────────────────────────────────────────────────
 function TeacherCard({ teacher, onBook }) {
+  const router = useRouter();
   const window20 = get20DayWindow();
   const availMap = {};
   for (const entry of teacher.availability || []) {
@@ -362,17 +368,24 @@ function TeacherCard({ teacher, onBook }) {
       <div className="p-6 flex flex-col flex-1">
         <div className="flex items-start gap-4 mb-4">
           <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black flex-shrink-0 overflow-hidden ring-2 ring-white/10 shadow-lg"
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black flex-shrink-0 overflow-hidden ring-2 ring-white/10 shadow-lg cursor-pointer hover:scale-105 transition-transform"
             style={teacher.user?.image ? {} : avatarStyle}
+            onClick={() => router.push(`/mentor/${teacher.username}`)}
           >
             {teacher.user?.image
               ? <img src={teacher.user.image} alt={teacher.user?.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               : <span style={{ color: avatarStyle.color }}>{teacher.user?.name?.charAt(0)?.toUpperCase()}</span>
             }
           </div>
-          <div className="min-w-0">
-            <h3 className="title-text font-black text-lg leading-tight truncate">{teacher.user?.name}</h3>
-            <p className="muted-text text-xs mt-0.5 truncate">{teacher.username}</p>
+          <div className="min-w-0 flex-1">
+            <button onClick={() => router.push(`/mentor/${teacher.username}`)} className="text-left hover:text-[var(--cyan)] transition-colors">
+              <h3 className="title-text font-black text-lg leading-tight truncate">{teacher.user?.name}</h3>
+            </button>
+            <p className="text-[var(--accent)] text-xs mt-0.5 font-semibold truncate">
+              {teacher.workExperiences?.length > 0
+                ? `${teacher.workExperiences.find(w => w.isCurrent)?.position || teacher.workExperiences[0].position} @ ${teacher.workExperiences.find(w => w.isCurrent)?.company || teacher.workExperiences[0].company}`
+                : teacher.username}
+            </p>
             <div className="flex items-center gap-1.5 mt-2">
               <span className={`w-2 h-2 rounded-full ${totalAvailable > 0 ? "bg-emerald-400 animate-pulse" : "bg-[var(--muted)]"}`} />
               <span className={`text-xs font-semibold ${totalAvailable > 0 ? "text-emerald-400" : "text-[var(--muted)]"}`}>
@@ -395,22 +408,30 @@ function TeacherCard({ teacher, onBook }) {
           </div>
         )}
 
-        <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)]">
+        <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--border)] gap-3">
           <div>
             <span className="text-2xl font-black text-[var(--cyan)]">{!teacher.fees || teacher.fees === 0 || teacher.fees === "0" ? "Free" : `₹${teacher.fees}`}</span>
             <span className="muted-text text-xs ml-1">{!teacher.fees || teacher.fees === 0 || teacher.fees === "0" ? "" : "/ session"}</span>
           </div>
-          <button
-            onClick={() => onBook(teacher)}
-            disabled={totalAvailable === 0}
-            className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
-            style={{
-              background: totalAvailable > 0 ? "linear-gradient(135deg, var(--cyan), var(--accent))" : "var(--surface-2)",
-              color: totalAvailable > 0 ? "white" : "var(--muted)",
-            }}
-          >
-            {totalAvailable > 0 ? "Book Session" : "Fully Booked"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/mentor/${teacher.username}`)}
+              className="px-3 py-2 rounded-xl text-xs font-bold border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--cyan)]/40 transition-all"
+            >
+              View Profile
+            </button>
+            <button
+              onClick={() => onBook(teacher)}
+              disabled={totalAvailable === 0}
+              className="px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+              style={{
+                background: totalAvailable > 0 ? "linear-gradient(135deg, var(--cyan), var(--accent))" : "var(--surface-2)",
+                color: totalAvailable > 0 ? "white" : "var(--muted)",
+              }}
+            >
+              {totalAvailable > 0 ? "Book" : "Full"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -85,7 +85,6 @@ const TABS = [
   { id: "availability", label: "Availability",  icon: "📅" },
   { id: "bookings",     label: "Bookings",      icon: "🗓️" },
   { id: "reviews",      label: "Reviews",       icon: "⭐" },
-  { id: "pricing",      label: "Pricing",       icon: "💰" },
   { id: "profile",      label: "Profile",       icon: "👤" },
 ];
 
@@ -625,73 +624,18 @@ function ReviewsTab({ reviews, stats }) {
   );
 }
 
-// ─── Pricing Tab ──────────────────────────────────────────────────────────────
-function PricingTab({ teacher, onUpdate }) {
-  const [fees, setFees] = useState(teacher?.fees ?? 0);
-  const [saving, setSaving] = useState(false);
-  const [alert, setAlert] = useState(null);
-
-  async function save(e) {
-    e.preventDefault();
-    setSaving(true);
-    setAlert(null);
-    try {
-      const res = await fetch("/api/v1/teacher/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fees }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setAlert({ type: "error", msg: data.error }); return; }
-      setAlert({ type: "success", msg: "Pricing updated!" });
-      onUpdate(data.teacher);
-    } catch {
-      setAlert({ type: "error", msg: "Failed to update. Try again." });
-    } finally { setSaving(false); }
-  }
-
-  return (
-    <div className="max-w-md space-y-6">
-      <div className="bg-[var(--surface)]/60 backdrop-blur-md border border-[var(--border)] rounded-3xl p-6 space-y-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">💰</div>
-          <div>
-            <p className="font-bold text-[var(--foreground)]">Session Price</p>
-            <p className="muted-text text-sm">Charged per 1-on-1 session</p>
-          </div>
-        </div>
-        <div className="px-6 py-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-[var(--cyan)]/5 border border-emerald-500/20 text-center">
-          <span className="text-5xl font-black text-emerald-400">₹{teacher?.fees ?? 0}</span>
-          <p className="muted-text text-sm mt-1">current rate</p>
-        </div>
-        <form onSubmit={save} className="space-y-4">
-          <label className="block">
-            <span className="soft-text text-sm font-semibold">New price (₹)</span>
-            <input
-              type="number"
-              min={0}
-              step={1}
-              value={fees}
-              onChange={e => setFees(Number(e.target.value))}
-              className="input-control mt-2 w-full"
-              placeholder="e.g. 500"
-            />
-          </label>
-          <Alert type={alert?.type} msg={alert?.msg} onClose={() => setAlert(null)} />
-          <button type="submit" disabled={saving || fees === teacher?.fees} className="btn-primary w-full rounded-xl disabled:opacity-50">
-            {saving ? "Saving…" : "Update Price"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // ─── Profile Tab ──────────────────────────────────────────────────────────────
 function ProfileTab({ teacher, onUpdate }) {
   const [bio, setBio] = useState(teacher?.bio || "");
   const [expertiseInput, setExpertiseInput] = useState("");
   const [expertise, setExpertise] = useState(teacher?.expertise || []);
+  const [fees, setFees] = useState(teacher?.fees ?? 0);
+  
+  // Work Experiences State
+  const [workExperiences, setWorkExperiences] = useState(teacher?.workExperiences || []);
+  const [isAddingExp, setIsAddingExp] = useState(false);
+  const [newExp, setNewExp] = useState({ position: "", company: "", startDate: "", endDate: "", isCurrent: false, description: "" });
+
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState(null);
 
@@ -710,6 +654,21 @@ function ProfileTab({ teacher, onUpdate }) {
     if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(); }
   }
 
+  function handleAddExperience() {
+    if (!newExp.position || !newExp.company || !newExp.startDate) {
+      setAlert({ type: "error", msg: "Position, Company, and Start Date are required." });
+      return;
+    }
+    setWorkExperiences(prev => [...prev, newExp]);
+    setNewExp({ position: "", company: "", startDate: "", endDate: "", isCurrent: false, description: "" });
+    setIsAddingExp(false);
+    setAlert(null);
+  }
+
+  function removeExperience(index) {
+    setWorkExperiences(prev => prev.filter((_, i) => i !== index));
+  }
+
   async function save(e) {
     e.preventDefault();
     setSaving(true);
@@ -718,11 +677,11 @@ function ProfileTab({ teacher, onUpdate }) {
       const res = await fetch("/api/v1/teacher/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio, expertise }),
+        body: JSON.stringify({ bio, expertise, workExperiences, fees }),
       });
       const data = await res.json();
       if (!res.ok) { setAlert({ type: "error", msg: data.error }); return; }
-      setAlert({ type: "success", msg: "Profile updated!" });
+      setAlert({ type: "success", msg: "Profile updated successfully!" });
       onUpdate(data.teacher);
     } catch {
       setAlert({ type: "error", msg: "Failed to update. Try again." });
@@ -730,10 +689,26 @@ function ProfileTab({ teacher, onUpdate }) {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl space-y-6">
       <form onSubmit={save} className="space-y-6">
+        
+        {/* Basic Profile */}
         <div className="bg-[var(--surface)]/60 backdrop-blur-md border border-[var(--border)] rounded-3xl p-6 space-y-5">
           <h3 className="font-bold text-[var(--foreground)]">Public Profile</h3>
+
+          <label className="block">
+            <span className="soft-text text-sm font-semibold">Session Price (₹)</span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={fees}
+              onChange={e => setFees(Number(e.target.value))}
+              className="input-control mt-2 w-full sm:max-w-[200px]"
+              placeholder="e.g. 500"
+            />
+            <p className="muted-text text-xs mt-1">Charged per 1-on-1 session.</p>
+          </label>
 
           <label className="block">
             <span className="soft-text text-sm font-semibold">Bio</span>
@@ -768,6 +743,89 @@ function ProfileTab({ teacher, onUpdate }) {
               <button type="button" onClick={addTag} className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--cyan)]/10 border border-[var(--cyan)]/20 text-[var(--cyan)] hover:bg-[var(--cyan)]/15 transition-colors">Add</button>
             </div>
           </div>
+        </div>
+
+        {/* Experience Section */}
+        <div className="bg-[var(--surface)]/60 backdrop-blur-md border border-[var(--border)] rounded-3xl p-6 space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-[var(--foreground)]">Work Experience</h3>
+            <button 
+              type="button" 
+              onClick={() => setIsAddingExp(true)} 
+              className="px-3 py-1.5 rounded-lg text-xs font-bold border border-[var(--cyan)]/30 text-[var(--cyan)] hover:bg-[var(--cyan)]/10 transition-colors"
+            >
+              + Add Experience
+            </button>
+          </div>
+
+          {/* List existing experiences */}
+          {workExperiences.length > 0 ? (
+            <div className="space-y-3">
+              {workExperiences.map((exp, idx) => (
+                <div key={idx} className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] relative group">
+                  <button 
+                    type="button" 
+                    onClick={() => removeExperience(idx)}
+                    className="absolute top-4 right-4 w-6 h-6 rounded-md bg-red-500/10 text-red-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                  >
+                    ✕
+                  </button>
+                  <p className="font-bold text-sm text-[var(--foreground)] pr-6">{exp.position}</p>
+                  <p className="text-xs text-[var(--cyan)] font-semibold mt-0.5">{exp.company}</p>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    {exp.startDate} – {exp.isCurrent ? "Present" : exp.endDate}
+                  </p>
+                  {exp.description && <p className="text-xs text-[var(--soft-text)] mt-2 leading-relaxed">{exp.description}</p>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-6 border border-dashed border-[var(--border)] rounded-2xl">
+              <p className="text-sm text-[var(--muted)]">No experience added yet.</p>
+            </div>
+          )}
+
+          {/* Add Form */}
+          {isAddingExp && (
+            <div className="p-4 rounded-xl border border-[var(--cyan)]/30 bg-[var(--cyan)]/5 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs font-semibold text-[var(--muted)]">Title / Position *</span>
+                  <input type="text" value={newExp.position} onChange={e => setNewExp({...newExp, position: e.target.value})} className="input-control mt-1 text-sm py-2" placeholder="e.g. Senior Engineer" />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-semibold text-[var(--muted)]">Company *</span>
+                  <input type="text" value={newExp.company} onChange={e => setNewExp({...newExp, company: e.target.value})} className="input-control mt-1 text-sm py-2" placeholder="e.g. Google" />
+                </label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <span className="text-xs font-semibold text-[var(--muted)]">Start Date *</span>
+                  <input type="month" value={newExp.startDate} onChange={e => setNewExp({...newExp, startDate: e.target.value})} className="input-control mt-1 text-sm py-2" />
+                </label>
+                <div className="block">
+                  <span className="text-xs font-semibold text-[var(--muted)]">End Date</span>
+                  {newExp.isCurrent ? (
+                    <div className="mt-1 h-[38px] flex items-center px-3 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] text-sm border border-[var(--border)]">Present</div>
+                  ) : (
+                    <input type="month" value={newExp.endDate} onChange={e => setNewExp({...newExp, endDate: e.target.value})} className="input-control mt-1 text-sm py-2" />
+                  )}
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer mt-1">
+                <input type="checkbox" checked={newExp.isCurrent} onChange={e => setNewExp({...newExp, isCurrent: e.target.checked, endDate: ""})} className="w-4 h-4 rounded border-[var(--border)] bg-[var(--surface-2)] text-[var(--cyan)] focus:ring-[var(--cyan)]" />
+                <span className="text-sm font-semibold text-[var(--foreground)]">I currently work here</span>
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-[var(--muted)]">Description (optional)</span>
+                <textarea rows={2} value={newExp.description} onChange={e => setNewExp({...newExp, description: e.target.value})} className="input-control mt-1 text-sm py-2 resize-none" placeholder="What did you do?" />
+              </label>
+              <div className="flex gap-2 justify-end pt-2">
+                <button type="button" onClick={() => setIsAddingExp(false)} className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--surface-2)]">Cancel</button>
+                <button type="button" onClick={handleAddExperience} className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--cyan)]/10 text-[var(--cyan)] border border-[var(--cyan)]/20 hover:bg-[var(--cyan)]/20">Add Role</button>
+              </div>
+            </div>
+          )}
         </div>
 
         <Alert type={alert?.type} msg={alert?.msg} onClose={() => setAlert(null)} />
@@ -875,7 +933,6 @@ export default function MentorDashboard() {
         {activeTab === "availability" && <AvailabilityTab />}
         {activeTab === "bookings"     && <BookingsTab bookings={bookings} onReschedule={handleReschedule} />}
         {activeTab === "reviews"      && <ReviewsTab reviews={reviews} stats={stats} />}
-        {activeTab === "pricing"      && <PricingTab teacher={teacher} onUpdate={handleTeacherUpdate} />}
         {activeTab === "profile"      && <ProfileTab teacher={teacher} onUpdate={handleTeacherUpdate} />}
       </div>
     </div>

@@ -24,9 +24,20 @@ export async function PATCH(req) {
     await connectDB();
 
     const body = await req.json();
-    const { bio, expertise, fees, username } = body;
+    const { bio, expertise, fees, username, workExperiences } = body;
 
     const updateFields = {};
+    if (workExperiences !== undefined && Array.isArray(workExperiences)) {
+      updateFields.workExperiences = workExperiences.map(exp => ({
+        position: exp.position?.trim() || "",
+        company: exp.company?.trim() || "",
+        startDate: exp.startDate?.trim() || "",
+        endDate: exp.endDate?.trim() || "",
+        isCurrent: Boolean(exp.isCurrent),
+        description: exp.description?.trim() || "",
+      })).filter(exp => exp.position && exp.company && exp.startDate);
+    }
+    
     if (bio !== undefined) updateFields.bio = bio.trim();
     if (expertise !== undefined)
       updateFields.expertise = expertise
