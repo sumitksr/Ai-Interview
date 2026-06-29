@@ -349,6 +349,7 @@ function AvailabilityTab() {
 function BookingsTab({ bookings, onReschedule }) {
   const [view, setView] = useState("upcoming");
   const [rescheduleBooking, setRescheduleBooking] = useState(null); // booking being rescheduled
+  const [newDate, setNewDate] = useState("");
   const [newStart, setNewStart] = useState("");
   const [newEnd, setNewEnd] = useState("");
   const [saving, setSaving] = useState(false);
@@ -367,6 +368,7 @@ function BookingsTab({ bookings, onReschedule }) {
 
   function openReschedule(b) {
     setRescheduleBooking(b);
+    setNewDate(b.scheduledDate ? new Date(b.scheduledDate).toISOString().split("T")[0] : "");
     setNewStart(b.startTime || "");
     setNewEnd(b.endTime || "");
     setAlert(null);
@@ -384,6 +386,7 @@ function BookingsTab({ bookings, onReschedule }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bookingId: rescheduleBooking._id,
+          newDate: newDate,
           newStartTime: newStart,
           newEndTime: newEnd,
         }),
@@ -391,7 +394,7 @@ function BookingsTab({ bookings, onReschedule }) {
       const data = await res.json();
       if (!res.ok) { setAlert({ type: "error", msg: data.error || "Failed to reschedule." }); return; }
       // Propagate update to parent so dashboard state stays in sync
-      onReschedule(rescheduleBooking._id, newStart, newEnd);
+      onReschedule(rescheduleBooking._id, newDate, newStart, newEnd);
       setAlert({ type: "success", msg: "Meeting time updated! Student has been notified by email. ✉️" });
       setTimeout(() => setRescheduleBooking(null), 2000);
     } catch {
@@ -495,6 +498,17 @@ function BookingsTab({ bookings, onReschedule }) {
             </div>
 
             <form onSubmit={handleReschedule} className="space-y-4">
+              <label className="block">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">New Date</span>
+                <input
+                  type="date"
+                  value={newDate}
+                  onChange={e => setNewDate(e.target.value)}
+                  required
+                  className="input-control mt-2 w-full"
+                />
+              </label>
+              
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">New Start Time</span>
@@ -863,13 +877,13 @@ export default function MentorDashboard() {
     setData(prev => prev ? { ...prev, teacher: updatedTeacher } : prev);
   }, []);
 
-  const handleReschedule = useCallback((bookingId, newStartTime, newEndTime) => {
+  const handleReschedule = useCallback((bookingId, newDate, newStartTime, newEndTime) => {
     setData(prev => {
       if (!prev) return prev;
       return {
         ...prev,
         bookings: prev.bookings.map(b =>
-          b._id === bookingId ? { ...b, startTime: newStartTime, endTime: newEndTime } : b
+          b._id === bookingId ? { ...b, scheduledDate: new Date(newDate), startTime: newStartTime, endTime: newEndTime } : b
         ),
       };
     });

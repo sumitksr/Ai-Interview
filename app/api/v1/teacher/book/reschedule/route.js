@@ -20,7 +20,7 @@ export async function PATCH(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { bookingId, newStartTime, newEndTime } = await req.json();
+    const { bookingId, newDate, newStartTime, newEndTime } = await req.json();
 
     // Basic validation
     if (!bookingId || !newStartTime || !newEndTime) {
@@ -43,6 +43,17 @@ export async function PATCH(req) {
         { error: "End time must be after start time" },
         { status: 400 }
       );
+    }
+    
+    let parsedDate = null;
+    if (newDate) {
+      parsedDate = new Date(newDate);
+      if (isNaN(parsedDate.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid date format" },
+          { status: 400 }
+        );
+      }
     }
 
     await connectDB();
@@ -72,22 +83,31 @@ export async function PATCH(req) {
     // Save old times for the email
     const oldStartTime = booking.startTime;
     const oldEndTime = booking.endTime;
+    const oldDateStr = new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
-    // Update times
+    // Update times and date
     booking.startTime = newStartTime;
     booking.endTime = newEndTime;
+    if (parsedDate) {
+      booking.scheduledDate = parsedDate;
+    }
     await booking.save();
 
     // Fetch student details for the email
     const student = await User.findById(booking.user).select("name email");
     if (student) {
       const teacherName = booking.teacher.user.name || "Your Mentor";
-      const dateStr = new Date(booking.scheduledDate).toLocaleDateString("en-IN", {
+      const newDateStr = parsedDate ? parsedDate.toLocaleDateString("en-IN", {
         weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
-      });
+      }) : oldDateStr;
 
       // Build meeting link (same logic as the meet page)
       const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
@@ -97,7 +117,8 @@ export async function PATCH(req) {
         studentEmail: student.email,
         studentName: student.name,
         teacherName,
-        day: dateStr,
+        oldDay: oldDateStr,
+        newDay: newDateStr,
         oldStartTime,
         oldEndTime,
         newStartTime,
@@ -110,6 +131,7 @@ export async function PATCH(req) {
       success: true,
       booking: {
         _id: booking._id,
+        scheduledDate: booking.scheduledDate,
         startTime: booking.startTime,
         endTime: booking.endTime,
       },
