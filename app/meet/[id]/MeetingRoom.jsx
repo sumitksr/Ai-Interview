@@ -3,118 +3,58 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import io from "socket.io-client";
 
-// ─── Icons (inline SVGs) ──────────────────────────────────────────────────────
+// ─── Google Meet Style Icons ───────────────────────────────────────────────────
 
 const MicOnIcon = () => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-  </svg>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
 );
-
 const MicOffIcon = () => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-  </svg>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10.8 4.9c0-.66.54-1.2 1.2-1.2s1.2.54 1.2 1.2l-.01 3.91L15 10.6V5c0-1.66-1.34-3-3-3-1.54 0-2.79 1.16-2.96 2.65l1.76 1.76V4.9zM19 11h-1.7c0 .58-.16 1.12-.42 1.6l1.32 1.32C18.73 13.06 19 12.06 19 11zM2.1 2.1L.69 3.51l5.48 5.48C5.46 9.61 5 10.27 5 11h1.7c0-1.71 1.05-3.18 2.53-3.83l2.84 2.84c-.04.31-.07.64-.07.99 0 2.76 2.24 5 5 5 .35 0 .68-.03.99-.07l3.52 3.52 1.41-1.41L2.1 2.1z"/></svg>
 );
-
 const CamOnIcon = () => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-  </svg>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
 );
-
 const CamOffIcon = () => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
-  </svg>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21 6.5l-4 4V7c0-.55-.45-1-1-1H9.82L21 17.18V6.5zM3.27 2L2 3.27 4.73 6H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.21 0 .39-.08.54-.18L19.73 21 21 19.73 3.27 2z"/></svg>
 );
-
-const ScreenShareIcon = ({ active }) => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    {active ? (
-      <>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
-      </>
-    ) : (
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-    )}
-  </svg>
+const ScreenShareIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.11-.9-2-2-2H4c-1.11 0-2 .89-2 2v10c0 1.1.89 2 2 2H0v2h24v-2h-4zM4 16V6h16v10H4z"/></svg>
 );
-
 const ChatIcon = ({ hasUnread }) => (
   <div className="relative">
-    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
-    {hasUnread && (
-      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-teal-400 rounded-full border-2 border-gray-950 animate-pulse" />
-    )}
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+    {hasUnread && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-[#202124]"></span>}
   </div>
 );
-
 const PhoneOffIcon = () => (
-  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
-  </svg>
+  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08c-.18-.17-.29-.42-.29-.7 0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.74-1.69-1.36-2.67-1.85-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>
 );
-
 const SendIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-  </svg>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
 );
-
 const CloseIcon = () => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-  </svg>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+);
+const InfoIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+);
+const PeopleIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
 );
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatTime(seconds) {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
-function formatMsgTime(ts) {
-  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function formatTime(date) {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function getInitials(name = "") {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase() || "?";
+  return name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
 }
-
-const ROLE_COLORS = {
-  mentor: { bg: "from-teal-500/20 to-cyan-500/20", badge: "bg-teal-500/20 text-teal-300 border-teal-500/30" },
-  student: { bg: "from-violet-500/20 to-indigo-500/20", badge: "bg-violet-500/20 text-violet-300 border-violet-500/30" },
-};
-
-const ICE_STATES = {
-  new: { label: "Initializing", color: "text-gray-400", dot: "bg-gray-500" },
-  checking: { label: "Connecting…", color: "text-yellow-400", dot: "bg-yellow-400 animate-pulse" },
-  connected: { label: "Connected", color: "text-teal-400", dot: "bg-teal-400" },
-  completed: { label: "Connected", color: "text-teal-400", dot: "bg-teal-400" },
-  disconnected: { label: "Reconnecting…", color: "text-orange-400", dot: "bg-orange-400 animate-pulse" },
-  failed: { label: "Connection Failed", color: "text-red-400", dot: "bg-red-500 animate-pulse" },
-  closed: { label: "Disconnected", color: "text-red-400", dot: "bg-red-500" },
-};
 
 const ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
   { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:global.stun.twilio.com:3478" },
 ];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -127,17 +67,14 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [participantJoined, setParticipantJoined] = useState(false);
   const [participantName, setParticipantName] = useState("Participant");
-  const [participantRole, setParticipantRole] = useState("student");
-  const [iceState, setIceState] = useState("new");
-  const [elapsed, setElapsed] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [mediaError, setMediaError] = useState(null);
   const [isRemoteScreenSharing, setIsRemoteScreenSharing] = useState(false);
-
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
   const userVideoRef = useRef(null);
   const partnerVideoRef = useRef(null);
   const peerRef = useRef(null);
@@ -147,7 +84,7 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
 
   // ── Session timer ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
+    const interval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -164,10 +101,6 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
   // ── WebRTC peer factory ────────────────────────────────────────────────────
   const createPeerConnection = useCallback((sock) => {
     const peer = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-
-    peer.oniceconnectionstatechange = () => {
-      setIceState(peer.iceConnectionState);
-    };
 
     peer.onicecandidate = (event) => {
       if (event.candidate) {
@@ -198,28 +131,21 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
         if (userVideoRef.current) userVideoRef.current.srcObject = stream;
       } catch (err) {
         console.error("Camera/Mic access denied:", err);
-        setMediaError("Could not access camera or microphone. Please check your browser permissions.");
-        // Still try to join room without local media
+        setMediaError("Could not access camera or microphone.");
       }
 
-      // Use NEXT_PUBLIC_SOCKET_URL for the deployed Render server,
-      // falls back to localhost:4000 in local dev
-      const socketUrl =
-        process.env.NEXT_PUBLIC_SOCKET_URL ||
-        (typeof window !== "undefined" ? `http://localhost:4000` : "");
+      const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== "undefined" ? `http://localhost:4000` : "");
       sock = io(socketUrl, { transports: ["websocket", "polling"] });
       setSocket(sock);
 
       sock.emit("join-room", roomId, userId, userName);
 
-      // ── Room participants already there ──────────────────────────────────
       sock.on("room-participants", (participants) => {
         if (participants.length > 0) {
           setParticipantName(participants[0].userName || "Participant");
         }
       });
 
-      // ── New user joined — we (existing user) create the offer ────────────
       sock.on("user-connected", ({ userId: remoteId, userName: remoteName }) => {
         setParticipantName(remoteName || "Participant");
 
@@ -238,7 +164,6 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
         });
       });
 
-      // ── Received offer — answer it ───────────────────────────────────────
       sock.on("offer", async ({ offer, senderId }) => {
         const peer = createPeerConnection(sock);
         peerRef.current = peer;
@@ -255,35 +180,31 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
         sock.emit("answer", { answer, roomId, senderId: sock.id });
       });
 
-      // ── Received answer ──────────────────────────────────────────────────
       sock.on("answer", ({ answer }) => {
-        peerRef.current?.setRemoteDescription(new RTCSessionDescription(answer));
+        if (peerRef.current && peerRef.current.signalingState === "have-local-offer") {
+          peerRef.current.setRemoteDescription(new RTCSessionDescription(answer)).catch((e) => console.warn("Answer Error:", e));
+        }
       });
 
-      // ── ICE candidates ───────────────────────────────────────────────────
       sock.on("ice-candidate", ({ candidate }) => {
         if (peerRef.current && candidate) {
           peerRef.current.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.warn);
         }
       });
 
-      // ── Participant left ─────────────────────────────────────────────────
       sock.on("user-disconnected", ({ userName: remoteName }) => {
         setParticipantJoined(false);
-        setIceState("closed");
         if (partnerVideoRef.current) partnerVideoRef.current.srcObject = null;
         if (peerRef.current) {
           peerRef.current.close();
           peerRef.current = null;
         }
-        // Add system message to chat
         setMessages((prev) => [
           ...prev,
           { id: Date.now(), system: true, text: `${remoteName || "Participant"} left the meeting.`, timestamp: Date.now() },
         ]);
       });
 
-      // ── Chat ─────────────────────────────────────────────────────────────
       sock.on("chat-message", ({ message, senderName, senderId, timestamp }) => {
         setMessages((prev) => [
           ...prev,
@@ -295,13 +216,8 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
         });
       });
 
-      // ── Screen share ─────────────────────────────────────────────────────
       sock.on("screen-share-started", ({ userName: n }) => {
         setIsRemoteScreenSharing(true);
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now(), system: true, text: `${n || "Participant"} started screen sharing.`, timestamp: Date.now() },
-        ]);
       });
 
       sock.on("screen-share-stopped", () => {
@@ -317,8 +233,7 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
       if (screenTrackRef.current) screenTrackRef.current.stop();
       if (peerRef.current) peerRef.current.close();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomId, userId, userName]);
+  }, [roomId, userId, userName, createPeerConnection]);
 
   // ── Controls ───────────────────────────────────────────────────────────────
 
@@ -340,7 +255,6 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
 
   const toggleScreenShare = async () => {
     if (isScreenSharing) {
-      // Stop screen share, restore camera
       if (screenTrackRef.current) {
         screenTrackRef.current.stop();
         screenTrackRef.current = null;
@@ -366,7 +280,6 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
           if (sender) await sender.replaceTrack(screenTrack);
         }
 
-        // Show screen locally too
         if (userVideoRef.current) {
           const composed = new MediaStream([
             screenTrack,
@@ -382,7 +295,7 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
         setIsScreenSharing(true);
         socket?.emit("screen-share-started", { roomId, userName });
       } catch (err) {
-        console.warn("Screen share cancelled or denied:", err);
+        console.warn("Screen share cancelled:", err);
       }
     }
   };
@@ -411,370 +324,194 @@ export default function MeetingRoom({ roomId, userId, userName, role = "student"
     window.location.href = "/dashboard";
   };
 
-  // ── Derived state ──────────────────────────────────────────────────────────
-  const myColors = ROLE_COLORS[role] || ROLE_COLORS.student;
-  const partRole = role === "mentor" ? "student" : "mentor";
-  const partColors = ROLE_COLORS[partRole] || ROLE_COLORS.student;
-  const iceInfo = ICE_STATES[iceState] || ICE_STATES.new;
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#05070d] text-white font-sans relative">
-
-      {/* ─── Ambient background ──────────────────────────────────────────── */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-teal-500/5 blur-3xl" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-violet-500/5 blur-3xl" />
-      </div>
-
-      {/* ─── Main area ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 min-w-0 relative z-10">
-
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-white/5 bg-[#080b14]/80 backdrop-blur-xl shrink-0">
-          <div className="flex items-center gap-4">
-            {/* Brand */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-400 flex items-center justify-center shadow-lg shadow-teal-500/20">
-                <svg className="w-4 h-4 text-[#041016]" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white leading-none">AI Interview</p>
-                <p className="text-[10px] text-gray-500 leading-none mt-0.5">Live Session</p>
-              </div>
-            </div>
-
-            {/* Session info */}
-            {bookingInfo.startTime && (
-              <div className="hidden md:flex items-center gap-1.5 text-xs text-gray-400 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{bookingInfo.startTime} – {bookingInfo.endTime}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Live dot + timer */}
-            <div className="flex items-center gap-2 bg-white/5 px-4 py-1.5 rounded-full border border-white/5">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400" />
-              </span>
-              <span className="text-xs font-mono font-semibold text-teal-300 tabular-nums">
-                {formatTime(elapsed)}
-              </span>
-            </div>
-
-            {/* Connection status */}
-            {participantJoined && (
-              <div className={`hidden sm:flex items-center gap-1.5 text-xs ${iceInfo.color} bg-white/5 px-3 py-1.5 rounded-full border border-white/5`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${iceInfo.dot}`} />
-                {iceInfo.label}
-              </div>
-            )}
-
-            {/* My role badge */}
-            <div className={`hidden sm:flex items-center text-xs px-3 py-1.5 rounded-full border font-semibold capitalize ${myColors.badge}`}>
-              {role}
-            </div>
-          </div>
-        </header>
-
-        {/* ── Media error banner ───────────────────────────────────────────── */}
-        {mediaError && (
-          <div className="mx-4 mt-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-sm flex items-start gap-3 shrink-0">
-            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>{mediaError}</span>
-          </div>
-        )}
-
-        {/* ── Video grid ───────────────────────────────────────────────────── */}
-        <main className="flex-1 overflow-hidden p-4 md:p-6">
-          <div className={`h-full grid gap-4 ${participantJoined ? "md:grid-cols-2" : "grid-cols-1 max-w-3xl mx-auto"}`}>
-
-            {/* ─ Remote video ──────────────────────────────────────────────── */}
-            <div className={`relative rounded-2xl overflow-hidden bg-[#0a0f1c] border border-white/5 shadow-2xl transition-all duration-500 ${!participantJoined ? "hidden md:flex" : ""}`}>
+    <div className="flex flex-col h-screen overflow-hidden bg-[#202124] text-white font-sans">
+      {/* ── Main Area ── */}
+      <div className="flex-1 flex overflow-hidden p-4 gap-4 relative">
+        
+        {/* Video Grid */}
+        <div className={`flex-1 flex justify-center items-center gap-4 transition-all duration-300 ${participantJoined ? 'flex-col md:flex-row' : ''}`}>
+          
+          {/* Remote Video (Only show if participant joined) */}
+          {participantJoined && (
+            <div className={`relative flex-1 bg-[#3c4043] rounded-xl overflow-hidden shadow-md flex justify-center items-center ${isRemoteScreenSharing ? 'md:flex-[2]' : ''} h-full max-h-full`}>
               <video
                 ref={partnerVideoRef}
                 autoPlay
                 playsInline
-                className={`w-full h-full object-cover transition-opacity duration-500 ${participantJoined ? "opacity-100" : "opacity-0"}`}
+                className={`w-full h-full object-cover`}
               />
-
-              {/* Waiting state */}
-              {!participantJoined && (
-                <div className={`absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br ${partColors.bg} to-transparent`}>
-                  <div className="relative mb-5">
-                    <div className="w-16 h-16 rounded-full border-2 border-white/10 border-t-teal-400 animate-spin" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-400">Waiting for participant…</p>
-                  <p className="text-xs text-gray-600 mt-1">Share your room link to invite them</p>
-                </div>
-              )}
-
-              {/* Remote screen share indicator */}
-              {isRemoteScreenSharing && (
-                <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-violet-500/20 text-violet-300 text-xs px-3 py-1.5 rounded-full border border-violet-500/30 backdrop-blur-sm">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Screen Sharing
-                </div>
-              )}
-
-              {/* Remote participant label */}
-              {participantJoined && (
-                <div className="absolute bottom-4 left-4 flex items-center gap-2">
-                  <div className={`px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-md text-sm font-medium border border-white/10 flex items-center gap-2`}>
-                    <span className={`w-1.5 h-1.5 rounded-full bg-teal-400`} />
-                    <span>{participantName}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border capitalize ${partColors.badge}`}>{partRole}</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ─ Local video ───────────────────────────────────────────────── */}
-            <div className={`relative rounded-2xl overflow-hidden bg-[#0a0f1c] border border-white/5 shadow-2xl ${participantJoined ? "" : "aspect-video"}`}>
-              <video
-                ref={userVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className={`w-full h-full object-cover transition-opacity duration-300 ${isVideoOff && !isScreenSharing ? "opacity-0" : "opacity-100"}`}
-              />
-
-              {/* Camera off avatar */}
-              {isVideoOff && !isScreenSharing && (
-                <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${myColors.bg}`}>
-                  <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-3xl font-bold text-gray-300 shadow-inner backdrop-blur-sm">
-                    {getInitials(userName)}
-                  </div>
-                </div>
-              )}
-
-              {/* Screen share badge */}
-              {isScreenSharing && (
-                <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-teal-500/20 text-teal-300 text-xs px-3 py-1.5 rounded-full border border-teal-500/30 backdrop-blur-sm">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Sharing Screen
-                </div>
-              )}
-
-              {/* Local label */}
-              <div className="absolute bottom-4 left-4 flex items-center gap-2">
-                <div className="px-3 py-1.5 rounded-xl bg-black/50 backdrop-blur-md text-sm font-medium border border-white/10 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  <span>You ({userName})</span>
-                  {isMuted && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30">Muted</span>
-                  )}
-                </div>
+              <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                <span className="text-sm font-medium">{participantName}</span>
               </div>
             </div>
+          )}
 
+          {/* Local Video */}
+          <div className={`relative bg-[#3c4043] rounded-xl overflow-hidden shadow-md flex justify-center items-center ${participantJoined ? 'flex-1 h-full' : 'w-full h-full max-w-5xl max-h-[80vh]'}`}>
+            <video
+              ref={userVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`w-full h-full object-cover transition-opacity duration-300 ${isVideoOff && !isScreenSharing ? "opacity-0" : "opacity-100"} transform scale-x-[-1]`}
+            />
+            {/* Camera Off Avatar */}
+            {isVideoOff && !isScreenSharing && (
+              <div className="absolute inset-0 flex items-center justify-center bg-[#3c4043]">
+                <div className="w-24 h-24 rounded-full bg-[#8ab4f8] flex items-center justify-center text-4xl font-semibold text-white shadow-lg">
+                  {getInitials(userName)}
+                </div>
+              </div>
+            )}
+            {/* Screen sharing badge */}
+            {isScreenSharing && (
+              <div className="absolute top-4 right-4 bg-blue-600 px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1">
+                You are presenting
+              </div>
+            )}
+            <div className="absolute bottom-4 left-4 bg-black/60 px-3 py-1.5 rounded-lg flex items-center gap-2">
+              <span className="text-sm font-medium">You</span>
+              {isMuted && <MicOffIcon className="w-4 h-4 text-red-500" />}
+            </div>
           </div>
-        </main>
 
-        {/* ── Controls bar ─────────────────────────────────────────────────── */}
-        <footer className="shrink-0 px-6 pb-6 pt-3 flex items-center justify-center gap-3 bg-[#080b14]/60 backdrop-blur-xl border-t border-white/5">
-          
-          {/* Mute */}
+        </div>
+
+        {/* ── Chat Panel (Sidebar) ── */}
+        {chatOpen && (
+          <div className="w-full md:w-80 bg-white text-[#202124] rounded-xl flex flex-col shadow-lg overflow-hidden shrink-0 absolute md:relative right-0 top-0 h-full z-20">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-800">In-call messages</h2>
+              <button onClick={() => setChatOpen(false)} className="text-gray-500 hover:bg-gray-100 p-2 rounded-full transition-colors">
+                <CloseIcon />
+              </button>
+            </div>
+            
+            <div className="bg-gray-50 p-3 text-xs text-gray-500 text-center border-b border-gray-200">
+              Messages can only be seen by people in the call and are deleted when the call ends.
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((msg) =>
+                msg.system ? (
+                  <div key={msg.id} className="text-center text-xs text-gray-400 my-2">
+                    {msg.text}
+                  </div>
+                ) : (
+                  <div key={msg.id} className="flex flex-col gap-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-bold text-gray-800">{msg.senderName}</span>
+                      <span className="text-xs text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap">{msg.text}</div>
+                  </div>
+                )
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <form onSubmit={sendMessage} className="p-4 border-t border-gray-200">
+              <div className="flex items-center bg-gray-100 rounded-full px-4 py-1">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Send a message to everyone"
+                  className="flex-1 bg-transparent border-none focus:outline-none text-sm py-2"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="text-blue-600 disabled:text-gray-400 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                >
+                  <SendIcon />
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+
+      {/* ── Bottom Control Bar ── */}
+      <div className="h-20 bg-[#202124] flex items-center justify-between px-6 shrink-0 relative z-30">
+        
+        {/* Left: Time & Room info */}
+        <div className="flex-1 flex items-center gap-4 text-white font-medium text-sm">
+          <span suppressHydrationWarning>{formatTime(currentTime)}</span>
+          <span className="hidden sm:inline">|</span>
+          <span className="hidden sm:inline">{roomId}</span>
+        </div>
+
+        {/* Center: Main Controls */}
+        <div className="flex items-center gap-3">
           <ControlButton
             onClick={toggleMute}
-            label={isMuted ? "Unmute" : "Mute"}
             active={isMuted}
-            activeClass="bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30"
-            defaultClass="bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
-          >
-            {isMuted ? <MicOffIcon /> : <MicOnIcon />}
-          </ControlButton>
-
-          {/* Camera */}
+            icon={isMuted ? <MicOffIcon /> : <MicOnIcon />}
+            activeColor="bg-[#ea4335] text-white hover:bg-[#d93025]"
+            defaultColor="bg-[#3c4043] text-white hover:bg-[#4a4d51]"
+          />
           <ControlButton
             onClick={toggleVideo}
-            label={isVideoOff ? "Start Video" : "Stop Video"}
             active={isVideoOff}
-            activeClass="bg-red-500/20 text-red-400 border-red-500/40 hover:bg-red-500/30"
-            defaultClass="bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
-          >
-            {isVideoOff ? <CamOffIcon /> : <CamOnIcon />}
-          </ControlButton>
-
-          {/* Screen share */}
+            icon={isVideoOff ? <CamOffIcon /> : <CamOnIcon />}
+            activeColor="bg-[#ea4335] text-white hover:bg-[#d93025]"
+            defaultColor="bg-[#3c4043] text-white hover:bg-[#4a4d51]"
+          />
           <ControlButton
             onClick={toggleScreenShare}
-            label={isScreenSharing ? "Stop Sharing" : "Share Screen"}
             active={isScreenSharing}
-            activeClass="bg-teal-500/20 text-teal-400 border-teal-500/40 hover:bg-teal-500/30"
-            defaultClass="bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
-          >
-            <ScreenShareIcon active={isScreenSharing} />
-          </ControlButton>
-
-          {/* Chat */}
-          <ControlButton
-            onClick={() => setChatOpen((o) => !o)}
-            label="Chat"
-            active={chatOpen}
-            activeClass="bg-teal-500/20 text-teal-400 border-teal-500/40"
-            defaultClass="bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:text-white"
-          >
-            <ChatIcon hasUnread={unreadCount > 0} />
-          </ControlButton>
-
-          {/* Divider */}
-          <div className="w-px h-10 bg-white/10 mx-1" />
-
-          {/* Leave */}
-          <button
-            onClick={() => setShowLeaveDialog(true)}
-            className="flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-red-500 hover:bg-red-600 active:scale-95 text-white font-semibold text-sm transition-all duration-200 shadow-lg shadow-red-500/25 hover:shadow-red-500/40"
-          >
-            <PhoneOffIcon />
-            <span className="hidden sm:inline">Leave</span>
-          </button>
-        </footer>
-      </div>
-
-      {/* ─── Chat panel ──────────────────────────────────────────────────────── */}
-      <div className={`fixed sm:relative top-0 right-0 h-full w-full sm:w-80 flex flex-col border-l border-white/5 bg-[#080b14] transition-transform duration-300 ease-out z-30 ${chatOpen ? "translate-x-0" : "translate-x-full sm:translate-x-full"}`}>
-        {/* Chat header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
-          <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span className="font-semibold text-sm">Meeting Chat</span>
-          </div>
-          <button
-            onClick={() => setChatOpen(false)}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-white/10">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
-              <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">
-                <svg className="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <p className="text-xs text-gray-600">No messages yet.<br />Say hello!</p>
-            </div>
-          )}
-
-          {messages.map((msg) =>
-            msg.system ? (
-              <div key={msg.id} className="flex justify-center">
-                <span className="text-[10px] text-gray-600 bg-white/5 px-3 py-1 rounded-full">
-                  {msg.text}
-                </span>
-              </div>
-            ) : (
-              <div key={msg.id} className={`flex flex-col gap-1 ${msg.mine ? "items-end" : "items-start"}`}>
-                {!msg.mine && (
-                  <span className="text-[10px] text-gray-500 px-1">{msg.senderName}</span>
-                )}
-                <div
-                  className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                    msg.mine
-                      ? "bg-teal-500/20 text-teal-100 border border-teal-500/20 rounded-br-sm"
-                      : "bg-white/5 text-gray-200 border border-white/5 rounded-bl-sm"
-                  }`}
-                >
-                  {msg.text}
-                </div>
-                <span className="text-[10px] text-gray-600 px-1">{formatMsgTime(msg.timestamp)}</span>
-              </div>
-            )
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Chat input */}
-        <form onSubmit={sendMessage} className="flex items-center gap-2 p-4 border-t border-white/5 shrink-0">
-          <input
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Type a message…"
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 outline-none focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/10 transition-all"
+            icon={<ScreenShareIcon />}
+            activeColor="bg-[#8ab4f8] text-[#202124] hover:bg-[#9bbef9]"
+            defaultColor="bg-[#3c4043] text-white hover:bg-[#4a4d51]"
           />
           <button
-            type="submit"
-            disabled={!chatInput.trim()}
-            className="p-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-40 disabled:cursor-not-allowed text-[#041016] transition-all duration-200 active:scale-95"
+            onClick={confirmLeave}
+            className="w-14 h-10 sm:w-16 sm:h-10 rounded-full bg-[#ea4335] hover:bg-[#d93025] flex items-center justify-center transition-colors ml-2"
           >
-            <SendIcon />
+            <PhoneOffIcon />
           </button>
-        </form>
-      </div>
+        </div>
 
-      {/* ─── Leave dialog ─────────────────────────────────────────────────────── */}
-      {showLeaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#0a0f1c] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-200">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
-                <PhoneOffIcon />
-              </div>
-              <div>
-                <h2 className="font-bold text-lg text-white">Leave Meeting?</h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  You will be disconnected from this session. The other participant will be notified.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowLeaveDialog(false)}
-                className="flex-1 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-gray-300 hover:bg-white/5 transition-colors"
-              >
-                Stay
-              </button>
-              <button
-                onClick={confirmLeave}
-                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-sm font-semibold text-white transition-colors shadow-lg shadow-red-500/20"
-              >
-                Leave Meeting
-              </button>
-            </div>
-          </div>
+        {/* Right: Side controls */}
+        <div className="flex-1 flex items-center justify-end gap-2">
+          <button className="p-3 rounded-full hover:bg-[#3c4043] text-white transition-colors">
+            <InfoIcon />
+          </button>
+          <button className="p-3 rounded-full hover:bg-[#3c4043] text-white transition-colors relative">
+            <PeopleIcon />
+            {participantJoined && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-[#5f6368] text-white text-[10px] font-bold rounded-full flex items-center justify-center">2</span>
+            )}
+          </button>
+          <button onClick={() => setChatOpen(!chatOpen)} className={`p-3 rounded-full transition-colors relative ${chatOpen ? 'text-[#8ab4f8]' : 'text-white hover:bg-[#3c4043]'}`}>
+            <ChatIcon hasUnread={unreadCount > 0 && !chatOpen} />
+          </button>
+        </div>
+
+      </div>
+      
+      {mediaError && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#3c4043] px-6 py-3 rounded-md shadow-lg text-white text-sm z-50">
+          {mediaError}
         </div>
       )}
-
     </div>
   );
 }
 
-// ─── ControlButton helper ─────────────────────────────────────────────────────
+// ─── ControlButton Component ──────────────────────────────────────────────────
 
-function ControlButton({ children, onClick, label, active, activeClass, defaultClass }) {
+function ControlButton({ onClick, icon, active, activeColor, defaultColor }) {
   return (
-    <div className="relative group">
-      <button
-        onClick={onClick}
-        className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200 border active:scale-95 ${active ? activeClass : defaultClass}`}
-      >
-        {children}
-      </button>
-      <span className="absolute -top-10 left-1/2 -translate-x-1/2 scale-0 group-hover:scale-100 transition-transform origin-bottom bg-[#101827] text-xs px-2.5 py-1.5 rounded-lg shadow-xl border border-white/10 whitespace-nowrap text-gray-200 pointer-events-none">
-        {label}
-      </span>
-    </div>
+    <button
+      onClick={onClick}
+      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-colors ${active ? activeColor : defaultColor}`}
+    >
+      {icon}
+    </button>
   );
 }

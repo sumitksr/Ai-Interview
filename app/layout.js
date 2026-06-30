@@ -46,9 +46,8 @@ export default async function RootLayout({ children }) {
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <Script
+        <script
           id="theme-init"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html:
               "try{var t=localStorage.getItem('ai-interview-theme')||'dark';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}",

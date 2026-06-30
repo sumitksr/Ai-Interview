@@ -147,7 +147,7 @@ export default async function MeetPage({ params }) {
 
   return (
     <MeetingRoom
-      roomId={booking._id.toString()}
+      roomId={booking.bookid || booking._id.toString()}
       userId={userId}
       userName={userName}
       role={isMentor ? "mentor" : "student"}

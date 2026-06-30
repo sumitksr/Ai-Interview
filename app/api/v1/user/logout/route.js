@@ -11,6 +11,7 @@ export async function POST() {
 
     // Clear all auth-related cookies
     response.cookies.set("token",       "", { path: "/", httpOnly: true, maxAge: 0 });
+    response.cookies.set("refreshToken","", { path: "/", httpOnly: true, maxAge: 0 });
     response.cookies.set("isLoggedIn",  "", { path: "/", maxAge: 0 });
     response.cookies.set("userInfo",    "", { path: "/", maxAge: 0 });
     // Also explicitly clear the NextAuth cookies just in case
