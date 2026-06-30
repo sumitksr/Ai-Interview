@@ -20,12 +20,12 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, role: user.role, email: user.email, name: user.name, image: user.image || "" }, JWT_SECRET, {
       expiresIn: "1d",
     });
 
     const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "fallback_refresh_secret_key_for_development";
-    const refreshToken = jwt.sign({ id: user._id, role: user.role }, REFRESH_TOKEN_SECRET, {
+    const refreshToken = jwt.sign({ id: user._id, role: user.role, }, REFRESH_TOKEN_SECRET, {
       expiresIn: "30d",
     });
 
