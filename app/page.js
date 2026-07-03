@@ -102,13 +102,7 @@ const TESTIMONIALS = [
 ];
 
 export default function Home() {
-  useEffect(() => {
-    // Wake up socket server
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
-    if (socketUrl) {
-      fetch(`${socketUrl}/check`).catch(() => {});
-    }
-  }, []);
+  
 
   return (
     <div className="page-shell">

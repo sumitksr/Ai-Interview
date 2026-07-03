@@ -9,24 +9,7 @@ const nextConfig = {
       { protocol: "https", hostname: "res.cloudinary.com" },
     ],
   },
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Permissions-Policy",
-            value:
-              "camera=*, microphone=*, display-capture=*, fullscreen=*, picture-in-picture=*",
-          },
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups",
-          },
-        ],
-      },
-    ];
-  },
 };
 
 export default nextConfig;
+

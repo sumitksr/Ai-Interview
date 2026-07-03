@@ -46,6 +46,7 @@ export default async function RootLayout({ children }) {
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
+        <meta name="darkreader-lock" />
         <script
           id="theme-init"
           dangerouslySetInnerHTML={{
@@ -54,7 +55,7 @@ export default async function RootLayout({ children }) {
           }}
         />
       </head>
-      <body className="min-h-full">
+      <body className="min-h-full" suppressHydrationWarning>
         <AuthProvider initialLoginState={isLoggedIn} initialUserInfo={userInfo}>
           <Navbar />
           <main className="min-h-[calc(100vh-168px)]">{children}</main>

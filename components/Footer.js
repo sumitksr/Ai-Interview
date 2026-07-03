@@ -28,6 +28,7 @@ export default function Footer() {
 
   return (
     <footer
+      suppressHydrationWarning
       style={{
         background: "color-mix(in srgb, var(--surface) 90%, transparent)",
         borderTop: "1px solid var(--border)",

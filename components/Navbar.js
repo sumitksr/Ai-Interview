@@ -40,6 +40,7 @@ export default function Navbar() {
   const [theme, setTheme] = useState("dark");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // Sync initial theme from localStorage after hydration
@@ -56,6 +57,7 @@ export default function Navbar() {
   }, [theme]);
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -67,18 +69,20 @@ export default function Navbar() {
 
   return (
     <div
+      suppressHydrationWarning
       className={`sticky top-0 z-50 flex justify-center w-full transition-all duration-300 ease-out ${
-        isScrolled ? "pt-3 px-4" : "pt-0 px-0"
+        mounted && isScrolled ? "pt-3 px-4" : "pt-0 px-0"
       }`}
     >
       <header
+        suppressHydrationWarning
         className={`w-full transition-all duration-300 ease-out ${
-          isScrolled
+          mounted && isScrolled
             ? "max-w-4xl rounded-2xl py-2.5 px-5 shadow-2xl"
             : "max-w-7xl py-4 px-5 sm:px-8"
         }`}
         style={
-          isScrolled
+          mounted && isScrolled
             ? {
                 background: "color-mix(in srgb, var(--surface) 84%, transparent)",
                 backdropFilter: "blur(24px)",
@@ -99,22 +103,22 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-3 group flex-shrink-0" aria-label="Ace AI home">
             <div
               className={`brand-mark grid place-items-center rounded-xl font-bold transition-all duration-300 group-hover:scale-110 ${
-                isScrolled ? "h-9 w-9" : "h-10 w-10"
+                mounted && isScrolled ? "h-9 w-9" : "h-10 w-10"
               }`}
             >
               {/* Custom Ace AI brand icon */}
               <img
                 src="/ace-icon.svg"
                 alt="Ace AI"
-                width={isScrolled ? "22" : "26"}
-                height={isScrolled ? "22" : "26"}
+                width={mounted && isScrolled ? "22" : "26"}
+                height={mounted && isScrolled ? "22" : "26"}
                 style={{ display: "block" }}
               />
             </div>
             <div className="flex flex-col leading-none">
               <span
                 className={`font-black tracking-tight transition-all duration-300 ${
-                  isScrolled ? "text-base" : "text-[1.15rem]"
+                  mounted && isScrolled ? "text-base" : "text-[1.15rem]"
                 }`}
                 style={{
                   background: "linear-gradient(135deg, var(--accent), var(--cyan))",
@@ -125,7 +129,7 @@ export default function Navbar() {
               >
                 Ace AI
               </span>
-              {!isScrolled && (
+              {!(mounted && isScrolled) && (
                 <span className="text-[9px] font-semibold tracking-[0.18em] uppercase mt-0.5" style={{ color: "var(--muted)" }}>
                   Interview Coach
                 </span>
