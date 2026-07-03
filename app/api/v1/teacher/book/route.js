@@ -5,6 +5,7 @@ import {
   sendBookingConfirmationToStudent,
   sendBookingNotificationToTeacher,
 } from "@/lib/sendBookingEmail";
+import { createGoogleMeetEvent } from "@/lib/googleCalendar";
 
 import crypto from "crypto";
 
@@ -177,7 +178,33 @@ export async function POST(req) {
     slot.bookingId = booking._id;
     await teacher.save();
 
-    // ── 8. Send emails (non-blocking) ─────────────────────────────────────────
+    // ── 8. Auto-generate Google Meet link via Calendar API ────────────────────
+    // Build IST datetime strings for the Calendar event
+    const dateKey = targetDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const startISO = `${dateKey}T${slot.startTime}:00+05:30`;
+    const endISO   = `${dateKey}T${slot.endTime}:00+05:30`;
+
+    let googleMeetLink = "";
+    try {
+      const { meetLink } = await createGoogleMeetEvent({
+        summary: `Interview Session: ${student.name} with ${teacher.user.name}`,
+        startISO,
+        endISO,
+        attendeeEmails: [student.email, teacher.user.email],
+        description:
+          `Booked via Ace AI Interview Platform.\nBooking ID: ${bookid}`,
+      });
+      googleMeetLink = meetLink;
+      // Save the real Google Meet link to the booking document
+      booking.meetingLink = googleMeetLink;
+      await booking.save();
+    } catch (calErr) {
+      // Non-fatal: log the error but do not fail the booking
+      console.error("[Google Calendar] Failed to create Meet event:", calErr.message);
+    }
+
+    // ── 9. Send emails (non-blocking) ─────────────────────────────────────────
+    // Emails link to our secure /meet/:bookid redirect (NOT the raw Google Meet URL)
     const meetingLink = `https://aceai.sumitksr.xyz/meet/${bookid}`;
 
     const dateLabel = targetDate.toLocaleDateString("en-IN", {

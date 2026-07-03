@@ -18,7 +18,10 @@ export async function GET(req, { params }) {
       ? { $or: [{ _id: id }, { bookid: id }] }
       : { bookid: id };
 
-    const booking = await Booking.findOne(query).populate("teacher");
+    // Select only safe fields — meetingLink is intentionally excluded
+    const booking = await Booking.findOne(query)
+      .populate("teacher")
+      .select("-meetingLink");
 
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });

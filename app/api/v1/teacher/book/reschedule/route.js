@@ -109,9 +109,9 @@ export async function PATCH(req) {
         day: "numeric",
       }) : oldDateStr;
 
-      // Build meeting link (same logic as the meet page)
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const meetingLink = `${baseUrl}/meet/${booking._id.toString()}`;
+      // Use the real Google Meet link stored in the booking (generated at booking time)
+      // Fall back to our secure redirect URL if meetingLink is somehow empty
+      const meetingLink = booking.meetingLink || `${process.env.NEXTAUTH_URL || "https://aceai.sumitksr.xyz"}/meet/${booking.bookid || booking._id.toString()}`;
 
       sendMeetingRescheduleEmail({
         studentEmail: student.email,
