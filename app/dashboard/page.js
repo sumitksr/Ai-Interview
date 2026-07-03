@@ -99,11 +99,6 @@ export default function Dashboard() {
   const [mentors, setMentors]   = useState([]);
 
   useEffect(() => {
-    // Wake up socket server
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
-    if (socketUrl) {
-      fetch(`${socketUrl}/check`).catch(() => {});
-    }
 
     fetch("/api/v1/dashboard")
       .then(r => {
