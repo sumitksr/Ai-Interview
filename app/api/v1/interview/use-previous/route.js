@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/getAuthUser";
 import { connectDB, UserData } from "@/imports";
-import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req) {
   try {
@@ -66,23 +66,29 @@ export async function POST(req) {
       ]
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.7,
-      },
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert technical interviewer. Respond ONLY with a valid JSON array of interview question strings — no markdown, no extra text.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
     });
 
-    const responseText = response.text.trim();
+    // OpenAI json_object mode returns an object — extract the array
+    const rawText = completion.choices[0].message.content.trim();
     let questions = [];
 
     try {
-      questions = JSON.parse(responseText);
+      const parsed = JSON.parse(rawText);
+      questions = Array.isArray(parsed) ? parsed : (parsed.questions || Object.values(parsed)[0] || []);
     } catch (e) {
-      console.error("Failed to parse JSON from AI:", responseText);
-      const match = responseText.match(/\[[\s\S]*?\]/);
+      console.error("Failed to parse JSON from AI:", rawText);
+      const match = rawText.match(/\[[\s\S]*?\]/);
       if (match) {
         try {
           questions = JSON.parse(match[0]);

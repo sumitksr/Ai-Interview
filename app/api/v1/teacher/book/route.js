@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/getAuthUser";
 import {
   sendBookingConfirmationToStudent,
   sendBookingNotificationToTeacher,
+  sendAdminMeetFailureAlert,
 } from "@/lib/sendBookingEmail";
 import { createGoogleMeetEvent } from "@/lib/googleCalendar";
 
@@ -178,29 +179,67 @@ export async function POST(req) {
     slot.bookingId = booking._id;
     await teacher.save();
 
-    // ── 8. Auto-generate Google Meet link via Calendar API ────────────────────
+    // ── 8. Auto-generate Google Meet link via Calendar API (with retry) ────────
     // Build IST datetime strings for the Calendar event
     const dateKey = targetDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
     const startISO = `${dateKey}T${slot.startTime}:00+05:30`;
     const endISO   = `${dateKey}T${slot.endTime}:00+05:30`;
 
+    const MAX_RETRIES = 3;
+    const RETRY_DELAYS_MS = [2000, 4000, 8000]; // exponential backoff: 2s, 4s, 8s
+
     let googleMeetLink = "";
-    try {
-      const { meetLink } = await createGoogleMeetEvent({
-        summary: `Interview Session: ${student.name} with ${teacher.user.name}`,
-        startISO,
-        endISO,
-        attendeeEmails: [student.email, teacher.user.email],
-        description:
-          `Booked via Ace AI Interview Platform.\nBooking ID: ${bookid}`,
+    let lastCalError = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const { meetLink } = await createGoogleMeetEvent({
+          summary: `Interview Session: ${student.name} with ${teacher.user.name}`,
+          startISO,
+          endISO,
+          attendeeEmails: [student.email, teacher.user.email],
+          description: `Booked via Ace AI Interview Platform.\nBooking ID: ${bookid}`,
+        });
+        googleMeetLink = meetLink;
+        lastCalError = null;
+        // Save the real Google Meet link to the booking document
+        booking.meetingLink = googleMeetLink;
+        await booking.save();
+        console.log(`[Google Calendar] Meet link created on attempt ${attempt}.`);
+        break; // success — exit retry loop
+      } catch (calErr) {
+        lastCalError = calErr;
+        console.error(
+          `[Google Calendar] Attempt ${attempt}/${MAX_RETRIES} failed:`,
+          calErr.message
+        );
+        if (attempt < MAX_RETRIES) {
+          // Wait before next retry
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt - 1]));
+        }
+      }
+    }
+
+    // All retries exhausted — send admin alert so it can be fixed manually
+    if (lastCalError) {
+      console.error(
+        "[Google Calendar] All retries failed. Sending admin alert.",
+        lastCalError.message
+      );
+      const formattedScheduledDate = targetDate.toLocaleDateString("en-IN", {
+        weekday: "long", year: "numeric", month: "long", day: "numeric",
       });
-      googleMeetLink = meetLink;
-      // Save the real Google Meet link to the booking document
-      booking.meetingLink = googleMeetLink;
-      await booking.save();
-    } catch (calErr) {
-      // Non-fatal: log the error but do not fail the booking
-      console.error("[Google Calendar] Failed to create Meet event:", calErr.message);
+      sendAdminMeetFailureAlert({
+        bookingId: booking._id.toString(),
+        bookid,
+        studentName: student.name,
+        studentEmail: student.email,
+        teacherName: teacher.user.name,
+        scheduledDate: formattedScheduledDate,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        errorMessage: lastCalError.message,
+      }).catch((e) => console.error("Admin alert email error:", e));
     }
 
     // ── 9. Send emails (non-blocking) ─────────────────────────────────────────

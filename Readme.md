@@ -118,7 +118,6 @@ GOOGLE_CALENDAR_REFRESH_TOKEN=your_refresh_token
 
 # ── AI APIs ───────────────────────────────────────────────────────────────────
 OPENAI_API_KEY=your_openai_api_key
-GEMINI_API_KEY=your_gemini_api_key
 
 # ── File Storage (Cloudinary) ─────────────────────────────────────────────────
 CLOUDINARY_API_KEY=

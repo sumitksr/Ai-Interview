@@ -97,6 +97,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("overview"); // overview | questions
   const [expandedQ, setExpandedQ] = useState(null);
   const [mentors, setMentors]   = useState([]);
+  const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
 
@@ -138,6 +139,12 @@ export default function Dashboard() {
     fetch("/api/v1/teacher")
       .then((r) => r.json())
       .then((d) => setMentors((d.teachers || []).slice(0, 3)))
+      .catch(() => {});
+
+    // Load student's own bookings
+    fetch("/api/v1/user/bookings")
+      .then((r) => r.json())
+      .then((d) => setBookings(d.bookings || []))
       .catch(() => {});
   }, [router]);
 
@@ -676,6 +683,139 @@ export default function Dashboard() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── My Booked Sessions ── */}
+      {bookings.length > 0 && (
+        <div className="mt-8">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-9 h-9 rounded-xl bg-[var(--cyan)]/10 border border-[var(--cyan)]/20 flex items-center justify-center text-[var(--cyan)] flex-shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-[var(--foreground)] leading-tight">My Booked Sessions</h3>
+              <p className="text-xs text-[var(--muted)]">Your upcoming &amp; past mentor sessions</p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {bookings.map((bk) => {
+              const schedDate = new Date(bk.scheduledDate);
+              const now = new Date();
+
+              // Determine if the session is in the past
+              const sessionDateStr = schedDate.toLocaleDateString("en-IN", {
+                weekday: "short", day: "numeric", month: "short", year: "numeric",
+                timeZone: "UTC",
+              });
+
+              // Build a rough "is upcoming" check using the endTime
+              const [endH = 0, endM = 0] = (bk.endTime || "00:00").split(":").map(Number);
+              const sessionEndUTC = new Date(schedDate);
+              sessionEndUTC.setUTCHours(endH - 5, endM - 30, 0, 0); // rough IST→UTC
+              const isPast = now > new Date(sessionEndUTC.getTime() + 60 * 60 * 1000);
+
+              const statusColors = {
+                confirmed: "text-green-400 bg-green-500/10 border-green-500/25",
+                pending:   "text-yellow-400 bg-yellow-500/10 border-yellow-500/25",
+                cancelled: "text-red-400 bg-red-500/10 border-red-500/25",
+                completed: "text-cyan-400 bg-cyan-500/10 border-cyan-500/25",
+              };
+              const statusCls = statusColors[bk.status] || statusColors.pending;
+
+              const avatarStyle = getAvatarStyle(bk.teacher?.name);
+
+              return (
+                <div key={bk._id}
+                  className={`bg-[var(--surface)]/60 backdrop-blur-md border rounded-2xl p-5 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 ${
+                    bk.status === "cancelled"
+                      ? "border-red-500/20 opacity-75"
+                      : isPast
+                      ? "border-[var(--border)] opacity-80"
+                      : "border-[var(--cyan)]/20 shadow-lg shadow-[var(--cyan)]/5"
+                  }`}
+                >
+                  {/* Mentor info */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-base font-black flex-shrink-0 overflow-hidden ring-2 ring-white/10"
+                      style={bk.teacher?.image ? {} : avatarStyle}
+                    >
+                      {bk.teacher?.image ? (
+                        <img src={bk.teacher.image} alt={bk.teacher?.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <span style={{ color: avatarStyle.color }}>{bk.teacher?.name?.charAt(0)?.toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-[var(--foreground)] truncate">{bk.teacher?.name || "Mentor"}</p>
+                      <p className="text-xs text-[var(--muted)] truncate">{bk.teacher?.email}</p>
+                    </div>
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${statusCls} flex-shrink-0`}>
+                      {bk.status.charAt(0).toUpperCase() + bk.status.slice(1)}
+                    </span>
+                  </div>
+
+                  {/* Session details */}
+                  <div className="bg-[var(--surface-2)] rounded-xl p-3 space-y-2 border border-[var(--border)]">
+                    <div className="flex items-center gap-2 text-sm">
+                      <svg className="w-4 h-4 text-[var(--muted)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      <span className="text-[var(--foreground)] font-semibold">{sessionDateStr}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <svg className="w-4 h-4 text-[var(--muted)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <span className="text-[var(--foreground)] font-semibold">{bk.startTime} – {bk.endTime} IST</span>
+                    </div>
+                    {bk.paymentStatus && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <svg className="w-4 h-4 text-[var(--muted)] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        <span className={`text-xs font-bold ${
+                          bk.paymentStatus === "paid" ? "text-green-400" :
+                          bk.paymentStatus === "free" ? "text-cyan-400" :
+                          "text-yellow-400"
+                        }`}>
+                          {bk.paymentStatus === "paid" ? `Paid ₹${bk.amountPaid}` :
+                           bk.paymentStatus === "free" ? "Free Session" :
+                           bk.paymentStatus.charAt(0).toUpperCase() + bk.paymentStatus.slice(1)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Meet link */}
+                  {bk.status !== "cancelled" && (
+                    bk.hasMeetLink ? (
+                      <a
+                        href={bk.meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                          isPast
+                            ? "bg-[var(--surface-2)] border border-[var(--border)] text-[var(--muted)] cursor-not-allowed pointer-events-none"
+                            : "text-white hover:scale-105 shadow-md"
+                        }`}
+                        style={!isPast ? { background: "linear-gradient(135deg, var(--cyan), var(--accent))" } : {}}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.069A1 1 0 0121 8.845v6.31a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        {isPast ? "Session Ended" : "Join Meeting"}
+                      </a>
+                    ) : (
+                      <div className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-yellow-500/8 border border-yellow-500/25 text-yellow-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                        Meet link pending…
+                      </div>
+                    )
+                  )}
+                  {bk.status === "cancelled" && (
+                    <div className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500/8 border border-red-500/25 text-red-400">
+                      Session Cancelled
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

@@ -8,11 +8,13 @@ import { useAuth } from "../../context/AuthContext";
 export default function Login() {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     const formData = new FormData(e.target);
     const email = formData.get("email");
@@ -28,6 +30,7 @@ export default function Login() {
       if (!res.ok) {
         const data = await res.json();
         setError(data.error || "Login failed");
+        setLoading(false);
         return;
       }
 
@@ -44,6 +47,7 @@ export default function Login() {
     } catch (err) {
       console.error(err);
       setError("An error occurred. Please try again.");
+      setLoading(false);
     }
   }
 
@@ -109,8 +113,19 @@ export default function Login() {
             />
           </label>
 
-          <button type="submit" className="btn-primary w-full">
-            Log in to PrepAI -&gt;
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <>
+                <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                Logging in…
+              </>
+            ) : (
+              "Log in to PrepAI →"
+            )}
           </button>
         </form>
 
