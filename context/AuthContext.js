@@ -14,6 +14,25 @@ export function AuthProvider({ children, initialLoginState, initialUserInfo }) {
   }, [initialLoginState, initialUserInfo]);
 
   useEffect(() => {
+    // Automatically sync NextAuth OAuth session (Google/GitHub) so access & refresh tokens are set
+    async function syncOAuthSession() {
+      try {
+        const res = await fetch("/api/auth/session-sync");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok) {
+            setIsLoggedIn(true);
+            setUserInfo(data.userInfo || { name: data.name, image: data.image, role: data.role });
+          }
+        }
+      } catch (err) {
+        // Silently fall back if not using OAuth
+      }
+    }
+    syncOAuthSession();
+  }, []);
+
+  useEffect(() => {
     // Setup global fetch interceptor for auto-refreshing tokens
     const originalFetch = window.fetch;
     let isRefreshing = false;
@@ -29,7 +48,14 @@ export function AuthProvider({ children, initialLoginState, initialUserInfo }) {
       
       const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
       // If unauthorized and we're not calling auth-related endpoints directly
-      if (response.status === 401 && url && !url.includes('/api/v1/user/refresh') && !url.includes('/api/v1/user/login') && !url.includes('/api/v1/user/logout')) {
+      if (
+        response.status === 401 &&
+        url &&
+        !url.includes('/api/v1/user/refresh') &&
+        !url.includes('/api/v1/user/login') &&
+        !url.includes('/api/v1/user/logout') &&
+        !url.includes('/api/auth/session-sync')
+      ) {
         
         if (!isRefreshing) {
           isRefreshing = true;

@@ -100,40 +100,38 @@ export default function Dashboard() {
   const [bookings, setBookings] = useState([]);
 
   useEffect(() => {
+    async function initDashboard() {
+      // Sync OAuth session first so token and refreshToken cookies are set for Google/GitHub logins
+      try {
+        const r = await fetch("/api/auth/session-sync");
+        const s = await r.json();
+        if (s.ok) login({ name: s.name, image: s.image, role: s.role });
+      } catch (e) {}
 
-    fetch("/api/v1/dashboard")
-      .then(r => {
-        if (r.status === 401) {
-          // Genuinely unauthenticated — redirect to login
-          router.push("/login");
-          throw new Error("unauthorized");
-        }
-        return r.json();
-      })
-      .then(async (d) => {
-        // Sync OAuth session cookie if needed before any redirects
-        const hasLoginCookie = document.cookie.includes("isLoggedIn=true");
-        if (!hasLoginCookie) {
-          try {
-            const r = await fetch("/api/auth/session-sync");
-            const s = await r.json();
-            if (s.ok) login({ name: s.name, image: s.image, role: s.role });
-          } catch (e) {}
-        }
+      fetch("/api/v1/dashboard")
+        .then(r => {
+          if (r.status === 401) {
+            router.push("/login");
+            throw new Error("unauthorized");
+          }
+          return r.json();
+        })
+        .then((d) => {
+          if (d.user?.role === "teacher") {
+            router.replace("/mentor/dashboard");
+            return;
+          }
+          if (d.user?.role === "admin") {
+            router.replace("/admin/dashboard");
+            return;
+          }
+          setData(d);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
 
-        if (d.user?.role === "teacher") {
-          router.replace("/mentor/dashboard");
-          return;
-        }
-        if (d.user?.role === "admin") {
-          router.replace("/admin/dashboard");
-          return;
-        }
-        
-        setData(d);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    initDashboard();
 
     // Load featured mentors
     fetch("/api/v1/teacher")

@@ -860,17 +860,24 @@ export default function MentorDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isLoggedIn) { router.push("/login"); return; }
+    async function initMentorDashboard() {
+      try {
+        await fetch("/api/auth/session-sync");
+      } catch (e) {}
 
-    fetch("/api/v1/teacher/dashboard")
-      .then(r => {
-        if (r.status === 403) { router.push("/dashboard"); throw new Error("not a teacher"); }
-        if (r.status === 401) { router.push("/login"); throw new Error("unauthorized"); }
-        return r.json();
-      })
-      .then(d => setData(d))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      if (!isLoggedIn) { router.push("/login"); return; }
+
+      fetch("/api/v1/teacher/dashboard")
+        .then(r => {
+          if (r.status === 403) { router.push("/dashboard"); throw new Error("not a teacher"); }
+          if (r.status === 401) { router.push("/login"); throw new Error("unauthorized"); }
+          return r.json();
+        })
+        .then(d => setData(d))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+    initMentorDashboard();
   }, [isLoggedIn, router]);
 
   const handleTeacherUpdate = useCallback((updatedTeacher) => {

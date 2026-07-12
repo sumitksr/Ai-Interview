@@ -97,6 +97,63 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.role = dbUser.role;
           user.image = dbUser.image || user.image;
           user.name = dbUser.name || user.name;
+
+          try {
+            const { cookies } = await import("next/headers");
+            const cookieStore = await cookies();
+            const jwt = (await import("jsonwebtoken")).default;
+            const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_key_for_development";
+            const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "fallback_refresh_secret_key_for_development";
+
+            const accessToken = jwt.sign(
+              {
+                id: dbUser._id.toString(),
+                role: dbUser.role,
+                email: dbUser.email,
+                name: dbUser.name,
+                image: dbUser.image || "",
+              },
+              JWT_SECRET,
+              { expiresIn: "1d" }
+            );
+
+            const refreshToken = jwt.sign(
+              {
+                id: dbUser._id.toString(),
+                role: dbUser.role,
+              },
+              REFRESH_TOKEN_SECRET,
+              { expiresIn: "30d" }
+            );
+
+            user.accessToken = accessToken;
+            user.refreshToken = refreshToken;
+
+            cookieStore.set("token", accessToken, {
+              path: "/",
+              httpOnly: true,
+              maxAge: 60 * 60 * 24,
+            });
+            cookieStore.set("refreshToken", refreshToken, {
+              path: "/",
+              httpOnly: true,
+              maxAge: 60 * 60 * 24 * 30,
+            });
+            cookieStore.set("isLoggedIn", "true", {
+              path: "/",
+              maxAge: 60 * 60 * 24,
+            });
+            cookieStore.set("userInfo", JSON.stringify({
+              name: dbUser.name,
+              image: dbUser.image || "",
+              role: dbUser.role,
+            }), {
+              path: "/",
+              maxAge: 60 * 60 * 24,
+            });
+          } catch (cookieErr) {
+            console.error("NextAuth cookie setting error:", cookieErr);
+          }
         }
 
         return true;
@@ -115,6 +172,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role;
         token.image = user.image;
         token.name = user.name;
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
       }
       return token;
     },
@@ -128,6 +187,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role;
         session.user.image = token.image;
         session.user.name = token.name;
+        session.accessToken = token.accessToken;
+        session.refreshToken = token.refreshToken;
       }
       return session;
     },
