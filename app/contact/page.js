@@ -1,13 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import emailjs from "@emailjs/browser";
-
-// ─── EmailJS config (loaded from .env via NEXT_PUBLIC_ prefix) ─────────────────
-const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
-const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
-const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
-// ───────────────────────────────────────────────────────────────────────────────
+import React, { useState } from "react";
 
 const contactInfo = [
   {
@@ -46,9 +39,18 @@ const contactInfo = [
 ];
 
 export default function Contact() {
-  const formRef = useRef(null);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
   const [status, setStatus] = useState("idle"); // "idle" | "sending" | "success" | "error"
   const [errorMsg, setErrorMsg] = useState("");
+
+  function handleChange(e) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -56,22 +58,39 @@ export default function Contact() {
     setErrorMsg("");
 
     try {
-      await emailjs.sendForm(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        formRef.current,
-        EMAILJS_PUBLIC_KEY
-      );
+      const res = await fetch("/api/v1/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // Field names match EmailJS template variables: {{name}}, {{email}},
+        // {{service}}, {{subject}}, {{time}}, {{message}}
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          service: "aceai",
+          subject: form.subject || "General Enquiry",
+          message: form.message,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMsg(data.error || "Something went wrong. Please try again.");
+        setStatus("error");
+        return;
+      }
+
       setStatus("success");
-      formRef.current.reset();
+      setForm({ name: "", email: "", subject: "", message: "" });
     } catch (err) {
-      console.error("EmailJS error:", err);
-      setErrorMsg(err?.text || "Something went wrong. Please try again.");
+      console.error("Contact form error:", err);
+      setErrorMsg("Network error. Please try again.");
       setStatus("error");
     }
   }
 
   return (
+    <div style={{ overflow: "hidden" }}>
     <div className="page-shell mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
       <div className="hero-orb-2" style={{ opacity: 0.5 }} />
 
@@ -140,30 +159,34 @@ export default function Contact() {
 
         {/* Right column — form */}
         <form
-          ref={formRef}
           onSubmit={handleSubmit}
           className="glass-card rounded-2xl p-7 sm:p-9 flex flex-col gap-5"
         >
-          {/* Hidden field — sent as {{service}} in EmailJS template */}
-          <input type="hidden" name="service" value="aceai" />
           <div className="grid gap-5 sm:grid-cols-2">
+            {/* name → matches {{name}} in EmailJS template */}
             <label className="block">
               <span className="soft-text text-sm font-semibold">Your Name</span>
               <input
-                name="from_name"
+                name="name"
                 type="text"
                 required
+                value={form.name}
+                onChange={handleChange}
                 placeholder="Arjun Mehta"
                 className="input-control mt-2"
                 id="contact-name"
               />
             </label>
+
+            {/* email → matches {{email}} in EmailJS template */}
             <label className="block">
               <span className="soft-text text-sm font-semibold">Email Address</span>
               <input
-                name="reply_to"
+                name="email"
                 type="email"
                 required
+                value={form.email}
+                onChange={handleChange}
                 placeholder="you@example.com"
                 className="input-control mt-2"
                 id="contact-email"
@@ -171,25 +194,35 @@ export default function Contact() {
             </label>
           </div>
 
+          {/* subject → matches {{subject}} in EmailJS template */}
           <label className="block">
             <span className="soft-text text-sm font-semibold">Subject</span>
-            <select name="subject" className="input-control mt-2" id="contact-subject">
+            <select
+              name="subject"
+              value={form.subject}
+              onChange={handleChange}
+              className="input-control mt-2"
+              id="contact-subject"
+            >
               <option value="">What is this about?</option>
-              <option value="interview-prep">Interview preparation question</option>
-              <option value="resume">Resume review help</option>
-              <option value="mentor">Finding a mentor</option>
-              <option value="bug">Reporting a bug</option>
-              <option value="feature">Feature request</option>
-              <option value="other">Something else</option>
+              <option value="Interview preparation question">Interview preparation question</option>
+              <option value="Resume review help">Resume review help</option>
+              <option value="Finding a mentor">Finding a mentor</option>
+              <option value="Reporting a bug">Reporting a bug</option>
+              <option value="Feature request">Feature request</option>
+              <option value="Something else">Something else</option>
             </select>
           </label>
 
+          {/* message → matches {{message}} in EmailJS template */}
           <label className="block">
             <span className="soft-text text-sm font-semibold">Message</span>
             <textarea
               name="message"
               required
               rows={6}
+              value={form.message}
+              onChange={handleChange}
               placeholder="Tell us what role you're preparing for, or what's on your mind..."
               className="input-control mt-2 resize-none"
               id="contact-message"
@@ -233,6 +266,7 @@ export default function Contact() {
           </button>
         </form>
       </div>
+    </div>
     </div>
   );
 }
