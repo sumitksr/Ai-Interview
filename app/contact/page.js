@@ -1,4 +1,13 @@
-import React from "react";
+"use client";
+
+import React, { useRef, useState } from "react";
+import emailjs from "@emailjs/browser";
+
+// ─── EmailJS config (loaded from .env via NEXT_PUBLIC_ prefix) ─────────────────
+const EMAILJS_SERVICE_ID  = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY  = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY;
+// ───────────────────────────────────────────────────────────────────────────────
 
 const contactInfo = [
   {
@@ -37,13 +46,29 @@ const contactInfo = [
 ];
 
 export default function Contact() {
-  async function handleSubmit(formData) {
-    "use server";
-    const name = formData.get("name");
-    const email = formData.get("email");
-    const subject = formData.get("subject");
-    const message = formData.get("message");
-    console.log({ name, email, subject, message });
+  const formRef = useRef(null);
+  const [status, setStatus] = useState("idle"); // "idle" | "sending" | "success" | "error"
+  const [errorMsg, setErrorMsg] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMsg("");
+
+    try {
+      await emailjs.sendForm(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        formRef.current,
+        EMAILJS_PUBLIC_KEY
+      );
+      setStatus("success");
+      formRef.current.reset();
+    } catch (err) {
+      console.error("EmailJS error:", err);
+      setErrorMsg(err?.text || "Something went wrong. Please try again.");
+      setStatus("error");
+    }
   }
 
   return (
@@ -115,14 +140,17 @@ export default function Contact() {
 
         {/* Right column — form */}
         <form
-          action={handleSubmit}
+          ref={formRef}
+          onSubmit={handleSubmit}
           className="glass-card rounded-2xl p-7 sm:p-9 flex flex-col gap-5"
         >
+          {/* Hidden field — sent as {{service}} in EmailJS template */}
+          <input type="hidden" name="service" value="aceai" />
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">
               <span className="soft-text text-sm font-semibold">Your Name</span>
               <input
-                name="name"
+                name="from_name"
                 type="text"
                 required
                 placeholder="Arjun Mehta"
@@ -133,7 +161,7 @@ export default function Contact() {
             <label className="block">
               <span className="soft-text text-sm font-semibold">Email Address</span>
               <input
-                name="email"
+                name="reply_to"
                 type="email"
                 required
                 placeholder="you@example.com"
@@ -168,12 +196,40 @@ export default function Contact() {
             />
           </label>
 
+          {/* Status feedback */}
+          {status === "success" && (
+            <div
+              className="rounded-xl px-4 py-3 text-sm font-semibold"
+              style={{
+                background: "rgba(52,211,153,0.12)",
+                border: "1px solid rgba(52,211,153,0.35)",
+                color: "var(--emerald)",
+              }}
+            >
+              ✅ Message sent! We&apos;ll get back to you within 24 hours.
+            </div>
+          )}
+
+          {status === "error" && (
+            <div
+              className="rounded-xl px-4 py-3 text-sm font-semibold"
+              style={{
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.3)",
+                color: "#ef4444",
+              }}
+            >
+              ❌ {errorMsg}
+            </div>
+          )}
+
           <button
             type="submit"
             id="contact-submit"
-            className="btn-primary self-start px-8 py-3 rounded-xl text-sm font-bold"
+            disabled={status === "sending"}
+            className="btn-primary self-start px-8 py-3 rounded-xl text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Send Message →
+            {status === "sending" ? "Sending…" : "Send Message →"}
           </button>
         </form>
       </div>
