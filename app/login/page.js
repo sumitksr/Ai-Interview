@@ -1,14 +1,338 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 
+// ─── OTP Input component (mirrors profile page) ───────────────────────────────
+function OtpInput({ value, onChange }) {
+  const refs = useRef([]);
+  const digits = value.padEnd(6, "").split("");
+
+  function handleChange(i, e) {
+    const val = e.target.value.replace(/\D/g, "").slice(-1);
+    const next = [...digits];
+    next[i] = val;
+    const joined = next.join("").replace(/ /g, "");
+    onChange(joined.slice(0, 6));
+    if (val && i < 5) refs.current[i + 1]?.focus();
+  }
+
+  function handleKeyDown(i, e) {
+    if (e.key === "Backspace" && !digits[i] && i > 0) refs.current[i - 1]?.focus();
+  }
+
+  function handlePaste(e) {
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    onChange(pasted);
+    refs.current[Math.min(pasted.length, 5)]?.focus();
+  }
+
+  return (
+    <div className="flex gap-2 sm:gap-3 justify-center" onPaste={handlePaste}>
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <input
+          key={i}
+          ref={(el) => (refs.current[i] = el)}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={digits[i] === " " ? "" : digits[i] || ""}
+          onChange={(e) => handleChange(i, e)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          className="w-11 h-14 text-center text-xl font-bold rounded-xl input-control"
+          style={{ padding: 0 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Forgot Password Modal ────────────────────────────────────────────────────
+function ForgotPasswordModal({ onClose }) {
+  // step: "email" → "otp" → "done"
+  const [step, setStep] = useState("email");
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState(null); // { type: "success"|"error"|"info", message }
+  const [cooldown, setCooldown] = useState(0);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  async function handleSendOtp(e) {
+    e?.preventDefault();
+    if (!email.trim()) { setAlert({ type: "error", message: "Please enter your email address." }); return; }
+    setLoading(true);
+    setAlert(null);
+    try {
+      const res = await fetch("/api/v1/user/forgot-password/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAlert({ type: "error", message: data.error }); return; }
+      setStep("otp");
+      setCooldown(60);
+      setAlert({ type: "info", message: `OTP sent to ${email.trim()}. Valid for 10 minutes.` });
+    } catch {
+      setAlert({ type: "error", message: "Failed to send OTP. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResendOtp() {
+    if (cooldown > 0) return;
+    setLoading(true);
+    setAlert(null);
+    try {
+      const res = await fetch("/api/v1/user/forgot-password/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAlert({ type: "error", message: data.error }); return; }
+      setCooldown(60);
+      setAlert({ type: "info", message: "A new OTP has been sent to your email." });
+    } catch {
+      setAlert({ type: "error", message: "Failed to resend OTP." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    if (otp.length < 6) { setAlert({ type: "error", message: "Please enter the full 6-digit OTP." }); return; }
+    if (newPassword !== confirmPassword) { setAlert({ type: "error", message: "Passwords don't match." }); return; }
+    if (newPassword.length < 8) { setAlert({ type: "error", message: "Password must be at least 8 characters." }); return; }
+    setLoading(true);
+    setAlert(null);
+    try {
+      const res = await fetch("/api/v1/user/forgot-password/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), otp, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAlert({ type: "error", message: data.error }); return; }
+      setStep("done");
+      setAlert({ type: "success", message: "Password reset successfully! You can now log in." });
+    } catch {
+      setAlert({ type: "error", message: "Something went wrong. Please try again." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const alertStyles = {
+    success: "bg-emerald-500/10 border-emerald-500/40 text-emerald-400",
+    error: "bg-red-500/10 border-red-500/40 text-red-400",
+    info: "bg-[var(--cyan-soft)] border-[var(--cyan)]/30 text-[var(--cyan)]",
+  };
+
+  return (
+    /* Backdrop */
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-[#0a0f1c] border border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-7 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-200">
+
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="font-black text-xl text-white">
+              {step === "done" ? "✅ Password Reset" : "Forgot Password"}
+            </h2>
+            <p className="text-sm text-gray-400 mt-1">
+              {step === "email" && "Enter your email to receive a one-time code."}
+              {step === "otp" && `Enter the OTP sent to ${email}`}
+              {step === "done" && "You can now log in with your new password."}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+            aria-label="Close"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Alert banner */}
+        {alert && (
+          <div className={`px-4 py-3 rounded-xl border text-sm flex items-start justify-between gap-3 ${alertStyles[alert.type]}`}>
+            <span>{alert.message}</span>
+            <button onClick={() => setAlert(null)} className="shrink-0 opacity-60 hover:opacity-100 transition-opacity">✕</button>
+          </div>
+        )}
+
+        {/* ── Step 1: Email ── */}
+        {step === "email" && (
+          <form onSubmit={handleSendOtp} className="space-y-5">
+            <label className="block">
+              <span className="text-sm font-semibold text-gray-300">Email address</span>
+              <input
+                type="email"
+                id="fp-email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="input-control mt-2 w-full"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Sending OTP…
+                </>
+              ) : (
+                "Send OTP →"
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* ── Step 2: OTP + New Password ── */}
+        {step === "otp" && (
+          <form onSubmit={handleResetPassword} className="space-y-6">
+            {/* OTP input */}
+            <div>
+              <p className="text-sm font-semibold text-gray-300 mb-3">Enter the 6-digit OTP</p>
+              <OtpInput value={otp} onChange={setOtp} />
+              <div className="mt-3 text-center">
+                {cooldown > 0 ? (
+                  <span className="text-xs text-gray-500">Resend OTP in {cooldown}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={loading}
+                    className="text-[var(--accent)] text-xs font-semibold hover:underline disabled:opacity-50"
+                  >
+                    Resend OTP
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* New password */}
+            <label className="block">
+              <span className="text-sm font-semibold text-gray-300">New password</span>
+              <div className="relative mt-2">
+                <input
+                  type={showPw ? "text" : "password"}
+                  id="fp-new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={8}
+                  required
+                  placeholder="At least 8 characters"
+                  className="input-control pr-12 w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-200 transition-colors"
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                >
+                  {showPw ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  )}
+                </button>
+              </div>
+            </label>
+
+            {/* Confirm password */}
+            <label className="block">
+              <span className="text-sm font-semibold text-gray-300">Confirm password</span>
+              <input
+                type={showPw ? "text" : "password"}
+                id="fp-confirm-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={8}
+                required
+                placeholder="Re-enter your password"
+                className="input-control mt-2 w-full"
+              />
+            </label>
+
+            <button
+              type="submit"
+              disabled={loading || otp.length < 6}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Resetting…
+                </>
+              ) : (
+                "Reset Password →"
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setStep("email"); setOtp(""); setAlert(null); }}
+              className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              ← Back to email
+            </button>
+          </form>
+        )}
+
+        {/* ── Step 3: Done ── */}
+        {step === "done" && (
+          <div className="space-y-4">
+            <div className="text-center py-4">
+              <div className="text-5xl mb-3">🎉</div>
+              <p className="text-white font-semibold">Password reset successfully!</p>
+              <p className="text-gray-400 text-sm mt-2">You can now log in with your new password.</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="btn-primary w-full"
+            >
+              Back to Login
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Login Page ──────────────────────────────────────────────────────────
 export default function Login() {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
   const { login } = useAuth();
 
   async function handleSubmit(e) {
@@ -52,99 +376,114 @@ export default function Login() {
   }
 
   return (
-    <div className="page-shell mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[0.85fr_1fr] lg:items-center lg:py-16">
-      <section className="tech-card hidden rounded-lg p-8 lg:block">
-        <p className="text-sm font-semibold text-accent">Welcome back to PrepAI</p>
-        <h1 className="title-text mt-3 text-4xl font-black leading-tight">
-          Ready to continue your interview journey?
-        </h1>
-        <div className="mt-8 space-y-4">
-          {[
-            ["Latest Assessment", "92%", "Senior React Developer"],
-            ["Recommended Practice", "System Design", "Focus on scalability"],
-            ["Resume Insight", "Highlight Impact", "Quantify your past achievements"],
-          ].map(([label, value, note]) => (
-            <div key={label} className="tech-card-subtle rounded-lg p-5">
-              <p className="muted-text text-sm font-semibold">{label}</p>
-              <p className="title-text mt-1 text-2xl font-bold">{value}</p>
-              <p className="muted-text mt-1 text-sm">{note}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+    <>
+      {/* Forgot Password Modal */}
+      {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
 
-      <section className="tech-card rounded-lg p-6 sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-accent">
-          Log in
-        </p>
-        <h2 className="title-text mt-3 text-3xl font-black">Access PrepAI Workspace</h2>
-        <p className="muted-text mt-3">
-          Sign in to view your progress, review past interviews, and start new mock sessions.
-        </p>
-
-        {error && (
-          <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-500 text-sm">
-            {error}
+      <div className="page-shell mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[0.85fr_1fr] lg:items-center lg:py-16">
+        <section className="tech-card hidden rounded-lg p-8 lg:block">
+          <p className="text-sm font-semibold text-accent">Welcome back to PrepAI</p>
+          <h1 className="title-text mt-3 text-4xl font-black leading-tight">
+            Ready to continue your interview journey?
+          </h1>
+          <div className="mt-8 space-y-4">
+            {[
+              ["Latest Assessment", "92%", "Senior React Developer"],
+              ["Recommended Practice", "System Design", "Focus on scalability"],
+              ["Resume Insight", "Highlight Impact", "Quantify your past achievements"],
+            ].map(([label, value, note]) => (
+              <div key={label} className="tech-card-subtle rounded-lg p-5">
+                <p className="muted-text text-sm font-semibold">{label}</p>
+                <p className="title-text mt-1 text-2xl font-bold">{value}</p>
+                <p className="muted-text mt-1 text-sm">{note}</p>
+              </div>
+            ))}
           </div>
-        )}
+        </section>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <label className="block" htmlFor="email">
-            <span className="soft-text text-sm font-semibold">Email</span>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              required
-              placeholder="you@example.com"
-              className="input-control mt-2"
-            />
-          </label>
+        <section className="tech-card rounded-lg p-6 sm:p-8">
+          <p className="text-sm font-semibold uppercase tracking-wide text-accent">
+            Log in
+          </p>
+          <h2 className="title-text mt-3 text-3xl font-black">Access PrepAI Workspace</h2>
+          <p className="muted-text mt-3">
+            Sign in to view your progress, review past interviews, and start new mock sessions.
+          </p>
 
-          <label className="block" htmlFor="password">
-            <span className="soft-text text-sm font-semibold">Password</span>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              placeholder="Your password"
-              className="input-control mt-2"
-            />
-          </label>
+          {error && (
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/50 rounded text-red-500 text-sm">
+              {error}
+            </div>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                Logging in…
-              </>
-            ) : (
-              "Log in to PrepAI →"
-            )}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <label className="block" htmlFor="email">
+              <span className="soft-text text-sm font-semibold">Email</span>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                placeholder="you@example.com"
+                className="input-control mt-2"
+              />
+            </label>
 
-        <div className="mt-6 flex items-center justify-center gap-4">
-          <div className="h-px bg-[var(--border)] flex-1"></div>
-          <span className="text-sm font-semibold text-[var(--muted)]">or</span>
-          <div className="h-px bg-[var(--border)] flex-1"></div>
-        </div>
+            <label className="block" htmlFor="password">
+              <div className="flex items-center justify-between">
+                <span className="soft-text text-sm font-semibold">Password</span>
+                <button
+                  type="button"
+                  id="forgot-password-btn"
+                  onClick={() => setShowForgot(true)}
+                  className="text-xs font-semibold text-[var(--accent)] hover:underline transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                placeholder="Your password"
+                className="input-control mt-2"
+              />
+            </label>
 
-        <OAuthButtons />
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Logging in…
+                </>
+              ) : (
+                "Log in to PrepAI →"
+              )}
+            </button>
+          </form>
 
-        <p className="muted-text mt-6 text-center text-sm">
-          Don't have an account?{" "}
-          <Link href="/signup" className="font-semibold text-accent hover:underline">
-            Sign up for free
-          </Link>
-        </p>
-      </section>
-    </div>
+          <div className="mt-6 flex items-center justify-center gap-4">
+            <div className="h-px bg-[var(--border)] flex-1"></div>
+            <span className="text-sm font-semibold text-[var(--muted)]">or</span>
+            <div className="h-px bg-[var(--border)] flex-1"></div>
+          </div>
+
+          <OAuthButtons />
+
+          <p className="muted-text mt-6 text-center text-sm">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="font-semibold text-accent hover:underline">
+              Sign up for free
+            </Link>
+          </p>
+        </section>
+      </div>
+    </>
   );
 }
 
