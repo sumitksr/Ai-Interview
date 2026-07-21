@@ -15,7 +15,7 @@ export async function POST(req) {
     if (existingUser) {
       return NextResponse.json({ error: "Email already in use." }, { status: 400 });
     }
-    const saltRounds = Number(process.env.N) || 10;
+    const saltRounds = Number(process.env.N) ;
 
 
     const hashedPassword = await bcrypt.hash(password, saltRounds);

@@ -1,6 +1,6 @@
 # Ace AI — AI-Powered Interview & Mentorship Platform
 
-![Architecture](Architecture.png)
+![Architecture](flows/Architecture.png)
 
 ## 🌐 Live Demo
 - **App**: [https://aceai.sumitksr.xyz](https://aceai.sumitksr.xyz)
