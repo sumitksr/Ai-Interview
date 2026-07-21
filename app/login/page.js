@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 
 // ─── OTP Input component (mirrors profile page) ───────────────────────────────
@@ -229,7 +229,7 @@ function ForgotPasswordModal({ onClose }) {
                     type="button"
                     onClick={handleResendOtp}
                     disabled={loading}
-                    className="text-[var(--accent)] text-xs font-semibold hover:underline disabled:opacity-50"
+                    className="text-accent text-xs font-semibold hover:underline disabled:opacity-50"
                   >
                     Resend OTP
                   </button>
@@ -330,10 +330,28 @@ function ForgotPasswordModal({ onClose }) {
 // ─── Main Login Page ──────────────────────────────────────────────────────────
 export default function Login() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const { login } = useAuth();
+  const callbackUrl = searchParams.get("callbackUrl");
+
+  function getRedirectTarget(role) {
+    if (callbackUrl && callbackUrl.startsWith("/")) {
+      return callbackUrl;
+    }
+
+    if (role === "teacher") {
+      return "/mentor/dashboard";
+    }
+
+    if (role === "admin") {
+      return "/admin/dashboard";
+    }
+
+    return "/dashboard";
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -361,13 +379,7 @@ export default function Login() {
       const data = await res.json();
       login({ name: data.name, image: data.image, role: data.role });
       
-      if (data.role === "teacher") {
-        router.push("/mentor/dashboard");
-      } else if (data.role === "admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/dashboard");
-      }
+      router.push(getRedirectTarget(data.role));
     } catch (err) {
       console.error(err);
       setError("An error occurred. Please try again.");
@@ -436,7 +448,7 @@ export default function Login() {
                   type="button"
                   id="forgot-password-btn"
                   onClick={() => setShowForgot(true)}
-                  className="text-xs font-semibold text-[var(--accent)] hover:underline transition-colors"
+                  className="text-xs font-semibold text-accent hover:underline transition-colors"
                 >
                   Forgot password?
                 </button>
@@ -468,9 +480,9 @@ export default function Login() {
           </form>
 
           <div className="mt-6 flex items-center justify-center gap-4">
-            <div className="h-px bg-[var(--border)] flex-1"></div>
-            <span className="text-sm font-semibold text-[var(--muted)]">or</span>
-            <div className="h-px bg-[var(--border)] flex-1"></div>
+            <div className="h-px bg-border flex-1"></div>
+            <span className="text-sm font-semibold text-muted">or</span>
+            <div className="h-px bg-border flex-1"></div>
           </div>
 
           <OAuthButtons />
@@ -489,11 +501,21 @@ export default function Login() {
 
 function OAuthButtons() {
   const [loadingProvider, setLoadingProvider] = React.useState(null);
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
+
+  function getOAuthCallbackUrl() {
+    if (callbackUrl && callbackUrl.startsWith("/")) {
+      return callbackUrl;
+    }
+
+    return "/dashboard";
+  }
 
   async function handleOAuth(provider) {
     setLoadingProvider(provider);
     const { signIn } = await import("next-auth/react");
-    await signIn(provider, { callbackUrl: "/dashboard" });
+    await signIn(provider, { callbackUrl: getOAuthCallbackUrl() });
   }
 
   return (
