@@ -2,14 +2,32 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Signup() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const callbackUrl = searchParams.get("callbackUrl");
+
+  function getRedirectTarget(role) {
+    if (callbackUrl && callbackUrl.startsWith("/")) {
+      return callbackUrl;
+    }
+
+    if (role === "teacher") {
+      return "/mentor/dashboard";
+    }
+
+    if (role === "admin") {
+      return "/admin/dashboard";
+    }
+
+    return "/dashboard";
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -38,14 +56,8 @@ export default function Signup() {
 
       const data = await res.json();
       login({ name: data.name, image: data.image, role: data.role });
-      
-      if (data.role === "teacher") {
-        router.push("/mentor/dashboard");
-      } else if (data.role === "admin") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/dashboard");
-      }
+
+      router.push(getRedirectTarget(data.role));
     } catch (err) {
       console.error(err);
       setError("An error occurred. Please try again.");
@@ -140,9 +152,9 @@ export default function Signup() {
         </form>
 
         <div className="mt-6 flex items-center justify-center gap-4">
-          <div className="h-px bg-[var(--border)] flex-1"></div>
-          <span className="text-sm font-semibold text-[var(--muted)]">or</span>
-          <div className="h-px bg-[var(--border)] flex-1"></div>
+          <div className="h-px bg-border flex-1"></div>
+          <span className="text-sm font-semibold text-muted">or</span>
+          <div className="h-px bg-border flex-1"></div>
         </div>
 
         <OAuthButtons />
@@ -183,11 +195,15 @@ export default function Signup() {
 // Separate component to allow dynamic import of next-auth/react
 function OAuthButtons() {
   const [loadingProvider, setLoadingProvider] = React.useState(null);
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
 
   async function handleOAuth(provider) {
     setLoadingProvider(provider);
     const { signIn } = await import("next-auth/react");
-    await signIn(provider, { callbackUrl: "/dashboard" });
+    await signIn(provider, {
+      callbackUrl: callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/dashboard",
+    });
   }
 
   return (
