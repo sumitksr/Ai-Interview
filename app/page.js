@@ -367,14 +367,7 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <div
-              className="px-6 py-4"
-              style={{ borderTop: "1px solid var(--border)", background: "var(--accent-soft)" }}
-            >
-              <p className="text-xs font-semibold" style={{ color: "var(--accent)" }}>
-                ✦ Upgrade to Pro for unlimited sessions + priority mentor access
-              </p>
-            </div>
+            
           </div>
         </div>
       </section>
