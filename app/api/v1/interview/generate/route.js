@@ -89,8 +89,7 @@ export async function POST(req) {
       Focus Area: ${focus}
       
       Resume Content:
-      ${finalResumeText.substring(0, 5000)} // Truncating to avoid token limits if too long
-      
+      ${finalResumeText.substring(0, 5000)} 
       Provide the response STRICTLY as a JSON array of strings, where each string is an interview question. Do not include markdown formatting like \`\`\`json or \`\`\`.
       Example:
       [
@@ -98,6 +97,8 @@ export async function POST(req) {
         "What was your most challenging project?"
       ]
     `;
+    // Truncating to avoid token limits if too long
+      
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",

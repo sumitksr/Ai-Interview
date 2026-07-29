@@ -186,7 +186,7 @@ export async function POST(req) {
     const endISO   = `${dateKey}T${slot.endTime}:00+05:30`;
 
     const MAX_RETRIES = 3;
-    const RETRY_DELAYS_MS = [2000, 4000, 8000]; // exponential backoff: 2s, 4s, 8s
+    const RETRY_DELAYS_MS = [1000, 4000, 8000]; // exponential backoff: 2s, 4s, 8s
 
     let googleMeetLink = "";
     let lastCalError = null;

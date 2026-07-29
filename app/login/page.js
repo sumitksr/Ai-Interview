@@ -81,7 +81,17 @@ function ForgotPasswordModal({ onClose }) {
         body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) { setAlert({ type: "error", message: data.error }); return; }
+      if (!res.ok) {
+        if (res.status === 404) {
+          setAlert({
+            type: "error",
+            message: "No account found with that email. Please check the address or sign up for a new account.",
+          });
+        } else {
+          setAlert({ type: "error", message: data.error });
+        }
+        return;
+      }
       setStep("otp");
       setCooldown(60);
       setAlert({ type: "info", message: `OTP sent to ${email.trim()}. Valid for 10 minutes.` });
