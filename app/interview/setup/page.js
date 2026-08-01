@@ -16,6 +16,7 @@ export default function InterviewSetup() {
     focus: "General",
     questionCount: "5",
     resumeText: "",
+    enableFollowUp: false,
   });
   const [resumeFile, setResumeFile] = useState(null);
 
@@ -48,8 +49,8 @@ export default function InterviewSetup() {
   }, [router]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
   const handleFileChange = (e) => {
@@ -107,6 +108,7 @@ export default function InterviewSetup() {
             focus: formData.focus,
             resumeUrl: result.resumeUrl || "",
             questions: result.questions,
+            enableFollowUp: formData.enableFollowUp,
           })
         );
 
@@ -143,6 +145,7 @@ export default function InterviewSetup() {
         focus: formData.focus,
         resumeUrl: result.resumeUrl,
         questions: result.questions,
+        enableFollowUp: formData.enableFollowUp,
       }));
 
       router.push("/interview/session");
@@ -235,6 +238,36 @@ export default function InterviewSetup() {
                 <option value="10">10 Questions</option>
               </select>
             </div>
+          </div>
+
+          {/* Follow-Up Mode Toggle */}
+          <div className="pt-4 border-t border-[var(--border)]">
+            <label
+              htmlFor="enableFollowUp"
+              className="flex items-start gap-4 p-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] cursor-pointer hover:bg-[var(--surface)] transition-colors group"
+            >
+              <div className="relative mt-0.5 flex-shrink-0">
+                <input
+                  id="enableFollowUp"
+                  type="checkbox"
+                  name="enableFollowUp"
+                  checked={formData.enableFollowUp}
+                  onChange={handleChange}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-[var(--surface)] rounded-full border border-[var(--border)] peer-checked:bg-[var(--cyan)] transition-colors duration-300"></div>
+                <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-300 peer-checked:translate-x-5"></div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[var(--foreground)] font-semibold text-sm flex items-center gap-2">
+                  Enable Follow-Up Interview Mode
+                  <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[var(--cyan)]/10 text-[var(--cyan)] rounded-full">New</span>
+                </p>
+                <p className="text-[var(--muted)] text-xs mt-1 leading-relaxed">
+                  After each answer, you&apos;ll get the option to request an AI follow-up question — or skip to the next. Max 10 follow-ups per question · 20 total per session.
+                </p>
+              </div>
+            </label>
           </div>
 
           <div className="space-y-3 pt-4 border-t border-[var(--border)]">

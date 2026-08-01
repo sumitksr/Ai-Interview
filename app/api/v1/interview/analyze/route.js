@@ -14,7 +14,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { questions, answers, targetRole, experienceLevel, focus, resumeUrl } =
+    const { questions, answers, targetRole, experienceLevel, focus, resumeUrl, followUpData } =
       await req.json();
 
     if (!questions || !answers || questions.length === 0) {
@@ -113,6 +113,9 @@ Analyze each answer and provide a comprehensive assessment. Return a JSON object
       hiringRecommendation: analysis.hiringRecommendation || "",
       nextSteps: analysis.nextSteps || "",
       questions: questionsForDB,
+      // Store all follow-up chains exactly as received from the session
+      // Each entry: { mainQuestion, mainAnswer, followUps: [{question, answer}] }
+      followUps: followUpData || [],
     });
 
     // Recalculate stats
