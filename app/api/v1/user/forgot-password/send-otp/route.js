@@ -55,11 +55,11 @@ export async function POST(req) {
     await transporter.sendMail({
       from: `"AI Interview Platform" <${process.env.MAIL_USER}>`,
       to: user.email,
-      subject: "Reset your PrepAI password",
+      subject: "Reset your AI Interview Platform password",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:auto;background:#0a0f1c;padding:32px;border-radius:16px;border:1px solid #263246;">
           <h2 style="color:#2dd4bf;margin-top:0;">Reset Your Password</h2>
-          <p style="color:#cbd6e4;">We received a request to reset your PrepAI account password. Use the OTP below — it expires in <strong>10 minutes</strong>.</p>
+          <p style="color:#cbd6e4;">We received a request to reset your AI Interview Platform account password. Use the OTP below — it expires in <strong>10 minutes</strong>.</p>
           <div style="background:#172033;border:1px solid #263246;border-radius:12px;padding:24px;text-align:center;margin:24px 0;">
             <span style="font-size:40px;font-weight:900;letter-spacing:12px;color:#f4f7fb;">${otp}</span>
           </div>
