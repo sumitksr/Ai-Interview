@@ -50,39 +50,46 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --background:   #f5f7fb;
+  /* Backgrounds — crisp cool-white with a breath of ocean */
+  --background:   #f0f9ff;
   --surface:      #ffffff;
-  --surface-2:    #eef3f8;
-  --surface-3:    #e2e8f0;
-  --surface-4:    #d5deea;
+  --surface-2:    #e0f2fe;
+  --surface-3:    #bae6fd;
+  --surface-4:    #7dd3fc;
 
-  --border:       #d5deea;
-  --border-soft:  rgba(213, 222, 234, 0.8);
+  /* Borders — sky-tinted, visible but airy */
+  --border:       #bae6fd;
+  --border-soft:  rgba(186, 230, 253, 0.8);
 
-  --foreground:   #111827;
-  --soft-text:    #334155;
-  --muted:        #64748b;
+  /* Text — deep navy for sharp contrast */
+  --foreground:   #0c1a2e;
+  --soft-text:    #0f3460;
+  --muted:        #374e6b;
 
-  --accent:        #0f766e;
-  --accent-strong: #115e59;
-  --accent-soft:   rgba(15, 118, 110, 0.12);
-  --accent-glow:   rgba(15, 118, 110, 0.2);
+  /* Primary accent — deep ocean blue, vivid on light bg */
+  --accent:        #0369a1;
+  --accent-strong: #075985;
+  --accent-soft:   rgba(3, 105, 161, 0.12);
+  --accent-glow:   rgba(3, 105, 161, 0.35);
 
+  /* Secondary — bright sky, punchy and vibrant */
   --emerald:       #0284c7;
   --emerald-strong:#0369a1;
   --emerald-soft:  rgba(2, 132, 199, 0.12);
-  --emerald-glow:  rgba(2, 132, 199, 0.2);
+  --emerald-glow:  rgba(2, 132, 199, 0.35);
 
-  --hot:           #ea580c;
-  --hot-strong:    #c2410c;
-  --hot-soft:      rgba(234, 88, 12, 0.12);
+  /* Hot — vivid coral that pops on light */
+  --hot:           #dc2626;
+  --hot-strong:    #b91c1c;
+  --hot-soft:      rgba(220, 38, 38, 0.12);
 
-  --cyan:          #0284c7;
-  --cyan-soft:     rgba(2, 132, 199, 0.12);
+  /* Cyan alias — bright sky blue */
+  --cyan:          #38bdf8;
+  --cyan-soft:     rgba(56, 189, 248, 0.15);
 
-  --shadow-sm:    0 4px 24px rgba(15, 23, 42, 0.1);
-  --shadow:       0 20px 60px rgba(15, 23, 42, 0.15);
-  --shadow-glow:  0 0 40px rgba(15, 118, 110, 0.15);
+  --shadow-sm:    0 4px 24px rgba(3, 105, 161, 0.12);
+  --shadow:       0 20px 60px rgba(3, 105, 161, 0.15);
+  --shadow-glow:  0 0 40px rgba(3, 105, 161, 0.25);
 }
 
 /* ─── Tailwind Theme Bridge ──────────────────────────────────────── */
@@ -154,10 +161,10 @@ body {
 
 [data-theme="light"] body {
   background-image:
-    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(15, 118, 110, 0.07) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 110%, rgba(2, 132, 199, 0.05) 0%, transparent 55%),
-    linear-gradient(rgba(15, 118, 110, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(2, 132, 199, 0.04) 1px, transparent 1px);
+    radial-gradient(ellipse 80% 60% at 20% -10%, rgba(3, 105, 161, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 110%, rgba(56, 189, 248, 0.08) 0%, transparent 55%),
+    linear-gradient(rgba(3, 105, 161, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
   background-size: auto, auto, 48px 48px, 48px 48px;
   background-attachment: fixed;
 }
@@ -168,7 +175,12 @@ input, textarea, select, button {
 
 ::selection {
   background: var(--accent);
-  color: #041016;
+  color: #ffffff;
+}
+
+[data-theme="light"] ::selection {
+  background: var(--accent);
+  color: #ffffff;
 }
 
 /* ─── Page Shell ─────────────────────────────────────────────────── */
@@ -229,9 +241,26 @@ input, textarea, select, button {
 
 .btn-primary {
   background: linear-gradient(135deg, var(--accent), var(--cyan));
+  color: #ffffff;
+  box-shadow: 0 0 30px var(--accent-glow), 0 4px 15px rgba(0,0,0,0.15);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+:root .btn-primary {
+  /* dark mode: bright neon on near-black — dark text is fine */
   color: #041016;
-  box-shadow: 0 0 30px var(--accent-glow), 0 4px 15px rgba(0,0,0,0.3);
-  border: 1px solid rgba(45, 212, 191, 0.4);
+}
+
+[data-theme="light"] .btn-primary {
+  /* sky → deep ocean: bright gradient that pops on light bg */
+  background: linear-gradient(135deg, #0ea5e9, #0369a1);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 20px rgba(3, 105, 161, 0.4), 0 1px 4px rgba(3, 105, 161, 0.25);
+}
+
+[data-theme="light"] .btn-primary:hover {
+  box-shadow: 0 8px 30px rgba(3, 105, 161, 0.55), 0 2px 8px rgba(3, 105, 161, 0.3);
 }
 
 .btn-primary::before {
@@ -266,9 +295,14 @@ input, textarea, select, button {
 
 .btn-emerald {
   background: linear-gradient(135deg, var(--emerald-strong), var(--emerald));
-  color: #041016;
+  color: #ffffff;
   box-shadow: 0 0 30px var(--emerald-glow);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  border: 1px solid color-mix(in srgb, var(--emerald) 50%, transparent);
+}
+
+:root .btn-emerald {
+  /* dark mode: bright sky-blue on dark — dark text is fine */
+  color: #041016;
 }
 
 .btn-emerald:hover {
@@ -283,12 +317,28 @@ input, textarea, select, button {
   backdrop-filter: blur(12px);
 }
 
+[data-theme="light"] .btn-secondary {
+  /* outlined style — clearly visible on any light background */
+  background: transparent;
+  border: 2px solid #0369a1;
+  color: #0369a1;
+  font-weight: 700;
+  box-shadow: none;
+}
+
 .btn-secondary:hover {
   transform: translateY(-2px);
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-soft);
   box-shadow: 0 0 20px var(--accent-glow);
+}
+
+[data-theme="light"] .btn-secondary:hover {
+  background: rgba(3, 105, 161, 0.08);
+  border-color: #0284c7;
+  color: #0284c7;
+  box-shadow: 0 4px 16px rgba(3, 105, 161, 0.2);
 }
 
 /* ─── Cards ──────────────────────────────────────────────────────── */
@@ -299,6 +349,11 @@ input, textarea, select, button {
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
+}
+
+[data-theme="light"] .glass-card {
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: var(--shadow-sm);
 }
 
 .glass-card::before {
@@ -338,6 +393,11 @@ input, textarea, select, button {
   border-bottom: 1px solid var(--border);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(18px);
+}
+
+[data-theme="light"] .site-header {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
 }
 
 .brand-mark {

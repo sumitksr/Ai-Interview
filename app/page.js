@@ -417,7 +417,7 @@ export default function Home() {
         <div
           className="rounded-3xl px-8 py-16 text-center relative overflow-hidden"
           style={{
-            background: "linear-gradient(135deg, rgba(10,28,28,0.98) 0%, rgba(8,18,32,0.98) 50%, rgba(10,28,24,0.98) 100%)",
+            background: "linear-gradient(135deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%)",
             border: "1px solid color-mix(in srgb, var(--accent) 40%, var(--border))",
             boxShadow: "0 0 80px var(--accent-glow)",
           }}
