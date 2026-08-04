@@ -102,34 +102,70 @@ function BookingModal({ teacher, onClose, onBooked }) {
     if (!selectedDate || !selectedSlot) return;
     setBooking(true);
     try {
-      const res = await fetch("/api/v1/teacher/book", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teacherId: teacher._id, date: selectedDate.toISOString(), slotId: selectedSlot._id }),
-      });
-      const data = await res.json();
-      if (!res.ok) { onBooked({ type: "error", message: data.error || "Booking failed" }); onClose(); return; }
-      if (isFree || !data.orderId) {
+      // ── Free mentor — book directly ───────────────────────────────────────────
+      if (isFree) {
+        const res = await fetch("/api/v1/teacher/book", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ teacherId: teacher._id, date: selectedDate.toISOString(), slotId: selectedSlot._id }),
+        });
+        const data = await res.json();
+        if (!res.ok) { onBooked({ type: "error", message: data.error || "Booking failed" }); onClose(); return; }
         onBooked({ type: "success", message: "Session booked! Check your dashboard." });
         onClose();
-      } else {
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-          amount: data.amount,
-          currency: data.currency,
-          name: "AI Interview Mentor",
-          description: `Session with ${teacher.user?.name}`,
-          order_id: data.orderId,
-          handler: async (response) => {
-            await fetch("/api/v1/teacher/book/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...response, bookingId: data.bookingId }) });
-            onBooked({ type: "success", message: "Payment successful! Session booked." });
-            onClose();
-          },
-          theme: { color: "#06b6d4" },
-        };
-        new window.Razorpay(options).open();
-        setBooking(false);
+        return;
       }
+
+      // ── Paid mentor — Step 1: create Razorpay order ───────────────────────────
+      const orderRes = await fetch("/api/v1/payment/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teacherId: teacher._id }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) {
+        onBooked({ type: "error", message: orderData.error || "Could not initiate payment" });
+        onClose();
+        return;
+      }
+
+      // ── Step 2: open Razorpay checkout (key comes from the API response) ──────
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Ace AI Interview",
+        description: `Session with ${teacher.user?.name}`,
+        order_id: orderData.orderId,
+        handler: async (response) => {
+          // ── Step 3: payment success — confirm the booking ─────────────────────
+          const bookRes = await fetch("/api/v1/teacher/book", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              teacherId: teacher._id,
+              date: selectedDate.toISOString(),
+              slotId: selectedSlot._id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+          const bookData = await bookRes.json();
+          if (!bookRes.ok) {
+            onBooked({ type: "error", message: bookData.error || "Booking confirmation failed" });
+          } else {
+            onBooked({ type: "success", message: "Payment successful! Session booked." });
+          }
+          onClose();
+        },
+        modal: {
+          ondismiss: () => { setBooking(false); },
+        },
+        theme: { color: "#06b6d4" },
+      };
+      new window.Razorpay(options).open();
+      setBooking(false);
     } catch {
       onBooked({ type: "error", message: "Something went wrong. Try again." });
       onClose();

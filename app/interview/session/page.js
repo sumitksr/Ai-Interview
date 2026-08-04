@@ -51,6 +51,32 @@ export default function InterviewSession() {
       const parsed = JSON.parse(data);
       setContext(parsed);
       setFollowUpMode(!!parsed.enableFollowUp);
+
+      // Restore saved session progress if it exists for this context
+      const savedSession = localStorage.getItem("interviewSession");
+      if (savedSession) {
+        try {
+          const session = JSON.parse(savedSession);
+          // Only restore if the saved session matches the current question set
+          if (
+            session.questionCount === parsed.questions?.length &&
+            session.targetRole === parsed.targetRole
+          ) {
+            setCurrentQuestionIndex(session.currentQuestionIndex ?? 0);
+            setAllAnswers(session.allAnswers ?? new Array(parsed.questions.length).fill(""));
+            setFollowUpHistories(
+              session.followUpHistories ??
+              new Array(parsed.questions.length).fill(null).map(() => [])
+            );
+            setGlobalFollowUpCount(session.globalFollowUpCount ?? 0);
+            setLoading(false);
+            return;
+          }
+        } catch (_) {
+          // Corrupt saved session — ignore and start fresh
+        }
+      }
+
       if (parsed.questions) {
         setAllAnswers(new Array(parsed.questions.length).fill(""));
         setFollowUpHistories(new Array(parsed.questions.length).fill(null).map(() => []));
@@ -99,7 +125,22 @@ export default function InterviewSession() {
     }
   }, [transcript, currentQuestionIndex, activeFollowUp]);
 
+  // Persist session progress to localStorage on every meaningful state change
+  useEffect(() => {
+    if (!context || !context.questions) return;
+    const session = {
+      currentQuestionIndex,
+      allAnswers,
+      followUpHistories,
+      globalFollowUpCount,
+      questionCount: context.questions.length,
+      targetRole: context.targetRole,
+    };
+    localStorage.setItem("interviewSession", JSON.stringify(session));
+  }, [currentQuestionIndex, allAnswers, followUpHistories, globalFollowUpCount, context]);
+
   // Reset per-question follow-up count & activeFollowUp when navigating
+  // Also ensures the camera stream is alive when returning to record mode
   const resetFollowUpForQuestion = (idx) => {
     setActiveFollowUp(null);
     setAnswerSubmitted(false);
@@ -108,6 +149,15 @@ export default function InterviewSession() {
     setPerQuestionFollowUpCount(
       (followUpHistories[idx] || []).length
     );
+    // Re-acquire camera/mic if stream is missing or tracks have ended
+    const srcObject = videoRef.current?.srcObject;
+    const allEnded =
+      !srcObject ||
+      srcObject.getTracks().length === 0 ||
+      srcObject.getTracks().every((t) => t.readyState === "ended");
+    if (allEnded) {
+      initMediaStream();
+    }
   };
 
   const startRecording = () => {
@@ -379,6 +429,7 @@ export default function InterviewSession() {
 
       localStorage.setItem("interviewAnalysis", JSON.stringify(analysis));
       localStorage.removeItem("interviewContext");
+      localStorage.removeItem("interviewSession"); // clear persisted progress
 
       router.push("/interview/results");
     } catch (error) {
