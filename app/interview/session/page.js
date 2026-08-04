@@ -61,23 +61,24 @@ export default function InterviewSession() {
     setLoading(false);
   }, [router]);
 
-  useEffect(() => {
-    async function setupMedia() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error("Error accessing media devices.", err);
+  // Helper to start/restart the camera stream
+  const initMediaStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
       }
+    } catch (err) {
+      console.error("Error accessing media devices.", err);
     }
+  };
 
+  useEffect(() => {
     if (!loading && context) {
-      setupMedia();
+      initMediaStream();
     }
 
     return () => {
@@ -544,7 +545,19 @@ export default function InterviewSession() {
         {/* Answer Mode Toggle */}
         <div className="mb-5 flex rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--surface-2)] p-1 gap-1">
           <button
-            onClick={() => { setAnswerMode("record"); setTypedAnswer(""); }}
+            onClick={async () => {
+              setAnswerMode("record");
+              setTypedAnswer("");
+              // Re-acquire camera if stream is missing or all tracks have ended
+              const srcObject = videoRef.current?.srcObject;
+              const allEnded =
+                !srcObject ||
+                srcObject.getTracks().length === 0 ||
+                srcObject.getTracks().every((t) => t.readyState === "ended");
+              if (allEnded) {
+                await initMediaStream();
+              }
+            }}
             disabled={isRecording || isTranscribing}
             className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${
               answerMode === "record"
