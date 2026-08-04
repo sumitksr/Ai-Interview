@@ -262,6 +262,8 @@ export async function POST(req) {
       startTime: slot.startTime,
       endTime: slot.endTime,
       meetingLink,
+      startISO,
+      endISO,
     });
 
     sendBookingNotificationToTeacher({
@@ -273,6 +275,8 @@ export async function POST(req) {
       startTime: slot.startTime,
       endTime: slot.endTime,
       meetingLink,
+      startISO,
+      endISO,
     });
 
     return NextResponse.json(

@@ -239,7 +239,7 @@ export default function Signup() {
                     Sending verification code…
                   </>
                 ) : (
-                  "Get Started with PrepAI →"
+                  "Get Started with AceAI →"
                 )}
               </button>
             </form>
@@ -253,7 +253,7 @@ export default function Signup() {
             <OAuthButtons />
 
             <p className="muted-text mt-6 text-center text-sm">
-              Already using PrepAI?{" "}
+              Already using AceAI?{" "}
               <Link
                 href="/login"
                 className="font-semibold text-accent hover:underline"
@@ -394,7 +394,7 @@ export default function Signup() {
       </section>
 
       <section className="tech-card rounded-lg p-6 sm:p-8">
-        <p className="text-sm font-semibold text-hot">Why Join PrepAI?</p>
+        <p className="text-sm font-semibold text-hot">Why Join AceAI?</p>
         <div className="mt-6 space-y-4">
           {[
             [
@@ -437,7 +437,7 @@ export default function Signup() {
                 <p className="text-sm font-semibold">Email verified for security</p>
                 <p className="muted-text mt-1 text-xs leading-relaxed">
                   We verify your email before creating your account to keep
-                  PrepAI safe and spam-free.
+                  AceAI safe and spam-free.
                 </p>
               </div>
             </div>

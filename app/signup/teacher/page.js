@@ -435,7 +435,7 @@ export default function TeacherSignup() {
                 </p>
                 <p className="muted-text mt-1 text-xs leading-relaxed">
                   We verify your email before creating your mentor account to
-                  keep PrepAI safe and trusted.
+                  keep AceAI safe and trusted.
                 </p>
               </div>
             </div>

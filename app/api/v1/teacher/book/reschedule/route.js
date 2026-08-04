@@ -113,6 +113,12 @@ export async function PATCH(req) {
       // Fall back to our secure redirect URL if meetingLink is somehow empty
       const meetingLink = booking.meetingLink || `${process.env.NEXTAUTH_URL || "https://aceai.sumitksr.xyz"}/meet/${booking.bookid || booking._id.toString()}`;
 
+      // Build ISO datetime strings for the Google Calendar link (IST = UTC+05:30)
+      const effectiveDate = parsedDate || new Date(booking.scheduledDate);
+      const dateKey = effectiveDate.toISOString().slice(0, 10); // "YYYY-MM-DD"
+      const startISO = `${dateKey}T${newStartTime}:00+05:30`;
+      const endISO   = `${dateKey}T${newEndTime}:00+05:30`;
+
       sendMeetingRescheduleEmail({
         studentEmail: student.email,
         studentName: student.name,
@@ -124,6 +130,8 @@ export async function PATCH(req) {
         newStartTime,
         newEndTime,
         meetingLink,
+        startISO,
+        endISO,
       }).catch((e) => console.error("Reschedule email error:", e));
     }
 
