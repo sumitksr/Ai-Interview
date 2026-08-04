@@ -16,8 +16,10 @@ export default function Signup() {
   // Step 1 = signup form, Step 2 = OTP verification
   const [step, setStep] = useState(1);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingFormData, setPendingFormData] = useState(null); // store for resend
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const otpRefs = useRef([]);
 
   // Countdown timer for resend button
@@ -62,6 +64,7 @@ export default function Signup() {
       }
 
       setPendingEmail(email);
+      setPendingFormData({ name, email, targetRole, password }); // save for resend
       setOtp(["", "", "", "", "", ""]);
       setResendCooldown(30);
       setStep(2);
@@ -106,13 +109,33 @@ export default function Signup() {
     }
   }
 
-  // ── Resend: go back to step 1 so user re-enters data ─────────────────────
-  function handleResend() {
-    if (resendCooldown > 0) return;
+  // ── Resend: call API again without leaving the OTP page ──────────────────
+  async function handleResend() {
+    if (resendCooldown > 0 || !pendingFormData) return;
     setError("");
-    setStep(1);
-    setPendingEmail("");
-    setOtp(["", "", "", "", "", ""]);
+    setResendSuccess(false);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/user/signup/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pendingFormData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to resend OTP.");
+      } else {
+        setOtp(["", "", "", "", "", ""]);
+        setResendCooldown(30);
+        setResendSuccess(true);
+        // Focus first OTP box
+        otpRefs.current[0]?.focus();
+      }
+    } catch {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // OTP box keyboard navigation
@@ -367,7 +390,38 @@ export default function Signup() {
               </button>
             </form>
 
-            <p className="muted-text mt-5 text-center text-sm">
+            {/* Spam folder hint */}
+            <div className="mt-5 flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-amber-400 mt-0.5 flex-shrink-0"
+              >
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <p className="text-xs text-amber-300 leading-relaxed">
+                Can&apos;t find the email? Check your{" "}
+                <span className="font-semibold">spam or junk folder</span> — it
+                may have landed there.
+              </p>
+            </div>
+
+            {/* Resend success message */}
+            {resendSuccess && (
+              <p className="mt-3 text-center text-xs text-green-400 font-medium">
+                ✓ A new code was sent to {pendingEmail}
+              </p>
+            )}
+
+            <p className="muted-text mt-4 text-center text-sm">
               Didn&apos;t receive the code?{" "}
               {resendCooldown > 0 ? (
                 <span className="text-muted">
@@ -379,9 +433,10 @@ export default function Signup() {
               ) : (
                 <button
                   onClick={handleResend}
-                  className="font-semibold text-accent hover:underline"
+                  disabled={loading}
+                  className="font-semibold text-accent hover:underline disabled:opacity-60"
                 >
-                  Go back &amp; resend
+                  {loading ? "Sending…" : "Resend OTP"}
                 </button>
               )}
             </p>
