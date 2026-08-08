@@ -42,6 +42,7 @@ export async function GET() {
       hasMeetLink: !!b.meetingLink, // tells client if the real gmeet link exists
       teacher: b.teacher
         ? {
+            _id: b.teacher._id,
             name: b.teacher.user?.name || "Mentor",
             email: b.teacher.user?.email || "",
             image: b.teacher.user?.image || null,

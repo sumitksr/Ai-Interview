@@ -98,6 +98,14 @@ export default function Dashboard() {
   const [expandedQ, setExpandedQ] = useState(null);
   const [mentors, setMentors]   = useState([]);
   const [bookings, setBookings] = useState([]);
+  // reviewedMap: { [teacherId]: { rating, comment, createdAt } } — one review per teacher
+  const [reviewedMap, setReviewedMap] = useState({});
+  // teacherId of the card currently open for review input (null = none open)
+  const [reviewModal, setReviewModal] = useState(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     async function initDashboard() {
@@ -144,7 +152,47 @@ export default function Dashboard() {
       .then((r) => r.json())
       .then((d) => setBookings(d.bookings || []))
       .catch(() => {});
+
+    // Load which bookings already have reviews
+    fetch("/api/v1/review")
+      .then((r) => r.json())
+      .then((d) => setReviewedMap(d.reviewed || {}))
+      .catch(() => {});
   }, [router]);
+
+  // ─── Submit / update a review (keyed by teacherId) ───────────────────────
+  async function submitReview(teacherId) {
+    if (reviewRating < 1) {
+      setReviewError("Please select a star rating.");
+      return;
+    }
+    setReviewSubmitting(true);
+    setReviewError("");
+    const isEdit = !!reviewedMap[teacherId];
+    try {
+      const res = await fetch("/api/v1/review", {
+        method: isEdit ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teacherId, rating: reviewRating, comment: reviewComment }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setReviewError(json.error || "Something went wrong.");
+      } else {
+        setReviewedMap((prev) => ({
+          ...prev,
+          [teacherId]: { rating: reviewRating, comment: reviewComment, createdAt: new Date().toISOString() },
+        }));
+        setReviewModal(null);
+        setReviewRating(0);
+        setReviewComment("");
+      }
+    } catch {
+      setReviewError("Network error. Please try again.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }
 
 
   // ─── Loading ─────────────────────────────────────────────────────────────
@@ -810,6 +858,122 @@ export default function Dashboard() {
                       Session Cancelled
                     </div>
                   )}
+
+                  {/* ── Review section: shown on past non-cancelled sessions ── */}
+                  {isPast && bk.status !== "cancelled" && (() => {
+                    const tid = bk.teacher?._id?.toString();
+                    const existingReview = tid ? reviewedMap[tid] : null;
+                    const isOpen = reviewModal === tid;
+
+                    if (isOpen) {
+                      // ── Inline review form (create or edit) ──
+                      return (
+                        <div className="w-full rounded-xl border border-[var(--cyan)]/30 bg-[var(--cyan)]/5 px-4 py-4 space-y-3">
+                          <p className="text-xs font-bold text-[var(--cyan)] uppercase tracking-wider">
+                            {existingReview ? "Edit Your Review" : "Rate This Mentor"}
+                          </p>
+                          {/* Star picker */}
+                          <div className="flex items-center gap-1.5">
+                            {[1,2,3,4,5].map((s) => (
+                              <button key={s} type="button"
+                                onClick={() => setReviewRating(s)}
+                                className="transition-transform hover:scale-125 focus:outline-none">
+                                <svg className="w-7 h-7" viewBox="0 0 20 20"
+                                  fill={s <= reviewRating ? "#f59e0b" : "none"}
+                                  stroke={s <= reviewRating ? "#f59e0b" : "var(--muted)"}
+                                  strokeWidth="1.5">
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                              </button>
+                            ))}
+                          </div>
+                          {/* Comment */}
+                          <textarea
+                            rows={2}
+                            placeholder="Share your experience (optional)…"
+                            value={reviewComment}
+                            onChange={(e) => setReviewComment(e.target.value)}
+                            className="w-full rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-sm text-[var(--foreground)] placeholder-[var(--muted)] px-3 py-2 resize-none focus:outline-none focus:border-[var(--cyan)]/50"
+                          />
+                          {reviewError && (
+                            <p className="text-xs text-red-400">{reviewError}</p>
+                          )}
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => submitReview(tid)}
+                              disabled={reviewSubmitting}
+                              className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-60 transition-all hover:scale-105"
+                              style={{ background: "linear-gradient(135deg, var(--cyan), var(--accent))" }}
+                            >
+                              {reviewSubmitting ? "Saving…" : existingReview ? "Update Review" : "Submit Review"}
+                            </button>
+                            <button
+                              onClick={() => { setReviewModal(null); setReviewRating(0); setReviewComment(""); setReviewError(""); }}
+                              className="px-3 py-2 rounded-lg text-xs font-semibold text-[var(--muted)] bg-[var(--surface-2)] border border-[var(--border)] hover:text-[var(--foreground)] transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (existingReview) {
+                      // ── Already reviewed — display stars + edit button ──
+                      return (
+                        <div className="w-full rounded-xl border border-[var(--cyan)]/20 bg-[var(--cyan)]/5 px-4 py-3 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold text-[var(--cyan)] uppercase tracking-wider">Your Review</p>
+                            <button
+                              onClick={() => {
+                                setReviewModal(tid);
+                                setReviewRating(existingReview.rating);
+                                setReviewComment(existingReview.comment || "");
+                                setReviewError("");
+                              }}
+                              className="flex items-center gap-1 text-xs text-[var(--muted)] hover:text-[var(--cyan)] transition-colors"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                              </svg>
+                              Edit
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {[1,2,3,4,5].map((s) => (
+                              <svg key={s} className="w-4 h-4" viewBox="0 0 20 20"
+                                fill={s <= existingReview.rating ? "#f59e0b" : "none"}
+                                stroke={s <= existingReview.rating ? "#f59e0b" : "var(--border)"}
+                                strokeWidth="1.5">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                              </svg>
+                            ))}
+                          </div>
+                          {existingReview.comment && (
+                            <p className="text-xs text-[var(--muted)] italic leading-relaxed line-clamp-2">"{existingReview.comment}"</p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // ── No review yet — show Leave a Review button ──
+                    return (
+                      <button
+                        onClick={() => {
+                          setReviewModal(tid);
+                          setReviewRating(0);
+                          setReviewComment("");
+                          setReviewError("");
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-[var(--cyan)]/30 text-[var(--cyan)] hover:bg-[var(--cyan)]/8 transition-all duration-200 hover:scale-[1.02]"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                        </svg>
+                        Leave a Review
+                      </button>
+                    );
+                  })()}
                 </div>
               );
             })}
