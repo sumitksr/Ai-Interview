@@ -9,7 +9,7 @@
 
 ## 📖 Overview
 
-**Ace AI** is a full-stack interview preparation and mentorship platform. It combines adaptive AI mock interviews, deep resume intelligence, and a mentor booking system — all in one workspace.
+**Ace AI** is a full-stack interview preparation and mentorship platform. It combines adaptive AI mock interviews, deep resume intelligence, a mentor booking system, and a full admin control panel — all in one workspace.
 
 Candidates can practice AI-driven mock interviews, get resume feedback, and book 1-on-1 sessions with real mentors. When a session is booked, a **Google Meet link is automatically generated** and saved to the booking. At session time, participants visit a secure link that validates their identity and time window, then redirects them directly into Google Meet.
 
@@ -19,8 +19,10 @@ Candidates can practice AI-driven mock interviews, get resume feedback, and book
 
 ### 🎙️ AI Mock Interviews
 - **Context-aware questioning** — adapts to your resume, target role, and previous answers
-- **Multi-modal input** — type answers or use your microphone (speech-to-text)
+- **Multi-modal input** — type answers or use your microphone (speech-to-text via Whisper)
+- **AI follow-up questions** — dynamically generated after each answer
 - **Instant feedback** — STAR method scoring, technical accuracy, behavioral analysis
+- **Reuse previous interview** — continue where you left off with previous question sets
 
 ### 📄 Resume Intelligence
 - **ATS keyword analysis** — matches your resume against a target job description
@@ -47,28 +49,46 @@ All session access is validated server-side before any redirect:
 - ✅ Session status must be `confirmed` or `pending` (not `cancelled` or `completed`)
 - ✅ Google Meet URL is **never exposed to the browser** — server-side `redirect()` only
 
+### 🛡️ Admin Portal (`/admin/*`)
+A dedicated admin control panel with its own sidebar layout, hidden from the main Navbar:
+
+- **Dashboard** — platform-wide stats (total users, mentors, bookings, revenue, interviews, avg score), 7-day signup chart, booking status pie chart, platform activity bar chart, and recent meets table
+- **Users** — view all users with role, provider, interview history; **change roles** with confirmation dialog; **terminate session** (clears refresh token → forces re-login); **delete user** permanently
+- **Mentors** — manage mentor accounts and profiles
+- **Meets** — view and manage all bookings across the platform
+- **Profile link** — sidebar profile button navigates to admin's own `/profile`; Dashboard link returns to admin portal
+
+### 🔑 Auth System
+- Email/password login with bcrypt + dual JWT (access token 1d, refresh token 30d)
+- Google OAuth and GitHub OAuth via NextAuth.js
+- OTP-verified signup flow (6-digit OTP, 10-minute expiry, 5-attempt lockout)
+- Forgot-password via OTP email
+- Auto token refresh interceptor (global `fetch` wrapper in AuthContext)
+- **DB-level refresh token validation** — admin can invalidate any user's session
+
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: Next.js 15 (App Router)
-- **UI**: React 19, Tailwind CSS v4, Custom CSS (Glassmorphism, Dark Mode)
-- **Charts**: Recharts
+- **Framework**: Next.js 16 (App Router, Turbopack)
+- **UI**: React 19, Tailwind CSS v4, Custom CSS (Glassmorphism, Dark/Light Mode)
+- **Charts**: Recharts (AreaChart, PieChart, BarChart)
 
 ### Backend
-- **API**: Next.js API Routes (App Router)
+- **API**: Next.js API Routes (App Router, `/api/v1/*`)
 - **Database**: MongoDB via Mongoose
-- **Auth**: NextAuth.js (Google OAuth, GitHub OAuth, Email/Password with bcrypt + JWT)
+- **Auth**: NextAuth.js (OAuth) + custom JWT (email/password)
 
 ### Integrations
 | Service | Purpose |
 |---|---|
 | Google GenAI (Gemini) | AI interview engine & resume analysis |
-| OpenAI API | Supplementary LLM processing |
+| OpenAI Whisper | Speech-to-text transcription |
+| OpenAI GPT | Supplementary LLM / follow-up question generation |
 | Google Calendar API | Auto-generate Google Meet links at booking |
 | Cloudinary | Avatar and asset storage |
-| Nodemailer | Booking confirmation & reschedule emails |
+| Nodemailer | Booking confirmation & reschedule emails, OTP emails |
 | Razorpay | Payment processing for paid mentor sessions |
 
 ---
@@ -101,6 +121,7 @@ MONGO_URI=your_mongodb_connection_string
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 JWT_SECRET=your_jwt_secret
+REFRESH_TOKEN_SECRET=your_refresh_token_secret
 NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 
@@ -111,13 +132,13 @@ GOOGLE_CLIENT_ID=your_google_oauth_client_id
 GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 
 # ── Google Calendar API (auto-generates Google Meet links at booking) ─────────
-# See "Google Meet Setup" section below for how to get these values.
 GOOGLE_CALENDAR_CLIENT_ID=your_calendar_oauth_client_id
 GOOGLE_CALENDAR_CLIENT_SECRET=your_calendar_oauth_client_secret
 GOOGLE_CALENDAR_REFRESH_TOKEN=your_refresh_token
 
 # ── AI APIs ───────────────────────────────────────────────────────────────────
 OPENAI_API_KEY=your_openai_api_key
+GEMINI_API_KEY=your_gemini_api_key
 
 # ── File Storage (Cloudinary) ─────────────────────────────────────────────────
 CLOUDINARY_API_KEY=
@@ -149,23 +170,15 @@ This step is required so the platform can auto-generate Google Meet links when s
 
 **Step 2 — Get your refresh token (run once locally)**
 
-Open `scripts/get-google-token.mjs` and paste your Client ID and Client Secret into the top of the file, then run:
+Open `scripts/get-google-token.mjs` and paste your Client ID and Client Secret, then run:
 
 ```bash
 node scripts/get-google-token.mjs
 ```
 
-A browser window will open. Sign in with the Google account that will host the Meet events. After authorizing, your terminal will print:
+A browser window will open. Sign in with the Google account that will host the Meet events. After authorizing, your terminal will print the three values — paste them into `.env`.
 
-```
-GOOGLE_CALENDAR_CLIENT_ID=...
-GOOGLE_CALENDAR_CLIENT_SECRET=...
-GOOGLE_CALENDAR_REFRESH_TOKEN=...
-```
-
-Paste all three into your `.env` file (and into Vercel environment variables for production).
-
-> **Note**: You can reuse the same OAuth client ID/secret as your Google login credentials, provided the **Google Calendar API** is enabled in that same Google Cloud project.
+> **Note**: You can reuse the same OAuth client as your Google login credentials, provided the **Google Calendar API** is enabled in that project.
 
 ### 5. Run the development server
 ```bash
@@ -181,23 +194,82 @@ Open [http://localhost:3000](http://localhost:3000).
 ```text
 Ai-Interview/
 ├── app/
-│   ├── api/v1/              # API routes (auth, booking, teacher, meet, payment)
-│   ├── dashboard/           # Candidate & mentor dashboards
-│   ├── interview/           # AI mock interview interface
-│   ├── meet/[id]/           # Secure meeting redirect (→ Google Meet)
-│   ├── mentor/              # Mentor profile pages
-│   └── (other pages)        # Login, Signup, About, Contact, Landing
-├── components/              # Shared UI components (Navbar, Footer, etc.)
-├── context/                 # React Context providers
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── [...nextauth]/      # NextAuth OAuth handler
+│   │   │   └── session-sync/       # Syncs OAuth session → JWT cookies
+│   │   └── v1/
+│   │       ├── admin/
+│   │       │   ├── stats/          # GET  – platform-wide stats
+│   │       │   ├── users/          # GET/PATCH/DELETE – user management + session termination
+│   │       │   ├── mentors/        # GET  – all mentors
+│   │       │   └── meets/          # GET  – all bookings
+│   │       ├── interview/
+│   │       │   ├── generate/       # POST – generate questions from resume/role
+│   │       │   ├── transcribe/     # POST – Whisper speech-to-text
+│   │       │   ├── followup/       # POST – AI follow-up question
+│   │       │   ├── analyze/        # POST – evaluate answer + score
+│   │       │   └── use-previous/   # POST – load previous question set
+│   │       ├── teacher/
+│   │       │   ├── route.js        # GET  – list all mentors
+│   │       │   ├── [id]/           # GET  – single mentor profile
+│   │       │   ├── profile/        # GET/PATCH – mentor's own profile
+│   │       │   ├── availability/   # GET/POST/DELETE – time slot management
+│   │       │   ├── book/           # POST – create booking + Meet link + payment
+│   │       │   └── dashboard/      # GET  – mentor's bookings & stats
+│   │       ├── user/
+│   │       │   ├── login/          # POST – email/password login (JWT + refresh token saved to DB)
+│   │       │   ├── signup/         # POST – OTP-verified signup
+│   │       │   ├── logout/         # POST – clear auth cookies
+│   │       │   ├── refresh/        # POST – rotate access token (DB-level session check)
+│   │       │   ├── profile/        # GET/PATCH – user profile
+│   │       │   ├── bookings/       # GET  – user's booking history
+│   │       │   ├── send-otp/       # POST – send OTP to email
+│   │       │   ├── set-password/   # POST – set/change password via OTP
+│   │       │   └── forgot-password/# POST – password reset flow
+│   │       ├── meet/[id]/          # GET  – secure meeting redirect
+│   │       ├── payment/            # POST – Razorpay verify signature
+│   │       ├── review/             # POST – submit mentor review
+│   │       ├── dashboard/          # GET  – candidate dashboard data
+│   │       └── contact/            # POST – contact form email
+│   ├── admin/
+│   │   ├── layout.js               # Admin sidebar layout (hidden from main Navbar)
+│   │   ├── dashboard/              # Admin overview: stats, charts, recent meets
+│   │   ├── users/                  # User management: roles, session termination, delete
+│   │   ├── mentors/                # Mentor management
+│   │   └── meets/                  # All bookings overview
+│   ├── dashboard/                  # Candidate performance dashboard
+│   ├── interview/                  # AI mock interview interface
+│   ├── meet/[id]/                  # Secure meeting access page
+│   ├── mentor/                     # Mentor profile & dashboard pages
+│   ├── mentors/                    # Browse all mentors
+│   ├── profile/                    # User profile & password management
+│   ├── login/                      # Login page
+│   ├── signup/                     # Signup page (OTP flow)
+│   ├── about/                      # About page
+│   └── contact/                    # Contact page
+├── components/
+│   └── Navbar.js                   # Responsive navbar (hidden on /admin/* routes)
+├── context/
+│   └── AuthContext.js              # Global auth state + auto token refresh interceptor
 ├── lib/
-│   ├── getAuthUser.js       # Unified auth helper (JWT + NextAuth)
-│   ├── googleCalendar.js    # Google Calendar API — Meet link generation
-│   ├── sendBookingEmail.js  # Nodemailer booking/reschedule emails
-│   └── mongodb.js           # DB connection
-├── models/                  # Mongoose schemas (User, Booking, Teacher, etc.)
+│   ├── getAuthUser.js              # Unified auth helper (JWT cookie + NextAuth)
+│   ├── googleCalendar.js           # Google Calendar API — Meet link generation
+│   ├── sendBookingEmail.js         # Nodemailer booking/reschedule emails
+│   ├── sendWelcomeEmail.js         # Welcome email on signup
+│   └── mongodb.js                  # DB connection
+├── models/
+│   ├── User.js                     # User schema (name, email, role, refreshToken, OAuth IDs)
+│   ├── UserData.js                 # Interview history, scores, averages
+│   ├── Teacher.js                  # Mentor profile schema
+│   ├── Booking.js                  # Session booking schema
+│   ├── Availability.js             # Mentor time slot schema
+│   └── reviews.js                  # Mentor review schema
+├── auth.js                         # NextAuth configuration
 ├── scripts/
-│   └── get-google-token.mjs # One-time OAuth2 refresh token helper
-└── public/                  # Static assets
+│   ├── get-google-token.mjs        # One-time Google OAuth2 refresh token helper
+│   └── seed.mjs                    # DB seed script
+└── public/                         # Static assets
 ```
 
 ---
@@ -207,7 +279,10 @@ Ai-Interview/
 - Google Meet links are stored server-side in MongoDB and **never sent to the browser**
 - The `/meet/:id` route performs full auth, authorization, time, and status checks before redirecting
 - All authorization logic runs on the server (Next.js Server Components + API Routes)
-- Payment signatures are verified server-side using HMAC-SHA256 before any booking is created
+- Payment signatures are verified server-side using HMAC-SHA256 before any booking is confirmed
+- **Refresh tokens are persisted in the DB** — admins can terminate any user session by clearing the stored token, which blocks the next refresh cycle
+- Access tokens expire in **1 day**; refresh tokens expire in **30 days**
+- OTP codes expire in **10 minutes** with a **5-attempt lockout**
 
 ---
 

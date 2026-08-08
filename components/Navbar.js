@@ -12,6 +12,7 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
 ];
 
+
 const AVATAR_COLORS = [
   ["#7c3aed", "#c4b8f0"],
   ["#1565c0", "#90caf9"],
@@ -62,6 +63,10 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Hide on all admin routes — the admin layout has its own sidebar
+  // NOTE: This must come AFTER all hooks (Rules of Hooks)
+  if (pathname.startsWith("/admin")) return null;
 
   function toggleTheme() {
     setTheme((t) => (t === "dark" ? "light" : "dark"));
@@ -141,9 +146,8 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
             {links.map((link) => {
               let href = link.href;
-              if (link.label === "Dashboard" && userInfo?.role) {
-                if (userInfo.role === "teacher") href = "/mentor/dashboard";
-                else if (userInfo.role === "admin") href = "/admin/dashboard";
+              if (link.label === "Dashboard" && userInfo?.role === "teacher") {
+                href = "/mentor/dashboard";
               }
               const isActive = pathname.startsWith(href) && (href !== "/" || pathname === "/");
               return (
@@ -263,9 +267,8 @@ export default function Navbar() {
             <div className="px-4 py-5 flex flex-col gap-1.5">
               {links.map((link) => {
                 let href = link.href;
-                if (link.label === "Dashboard" && userInfo?.role) {
-                  if (userInfo.role === "teacher") href = "/mentor/dashboard";
-                  else if (userInfo.role === "admin") href = "/admin/dashboard";
+                if (link.label === "Dashboard" && userInfo?.role === "teacher") {
+                  href = "/mentor/dashboard";
                 }
                 const isActive = pathname.startsWith(href) && (href !== "/" || pathname === "/");
                 return (

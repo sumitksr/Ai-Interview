@@ -1,8 +1,8 @@
 import { Inter, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { Navbar, Footer, AuthProvider } from "@/imports";
 import { cookies } from "next/headers";
+import AdminShellSuppressor from "./AdminShellSuppressor";
 
 const inter = Inter({
   variable: "--font-geist-sans",
@@ -58,11 +58,15 @@ export default async function RootLayout({ children }) {
       <body className="min-h-full" suppressHydrationWarning>
         <AuthProvider initialLoginState={isLoggedIn} initialUserInfo={userInfo}>
           <Navbar />
-          <main className="min-h-[calc(100vh-168px)]">{children}</main>
+          {/*
+            AdminShellSuppressor: on /admin/* routes it renders children directly
+            (no main wrapper) so the admin sidebar layout takes full control.
+            On all other routes it wraps children in the normal <main> tag.
+          */}
+          <AdminShellSuppressor>{children}</AdminShellSuppressor>
           <Footer />
         </AuthProvider>
       </body>
     </html>
   );
 }
-

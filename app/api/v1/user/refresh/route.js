@@ -21,18 +21,26 @@ export async function POST(req) {
     }
 
     await connectDB();
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded.id).select("_id role refreshToken name email image");
 
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    const newAccessToken = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    // ── DB-level session check ───────────────────────────────────────────────
+    // If an admin terminated this user's session, refreshToken will be unset in DB.
+    // Reject the refresh so the user is forced to log in again.
+    if (!user.refreshToken || user.refreshToken !== refreshTokenCookie) {
+      return NextResponse.json({ error: "Session has been terminated. Please log in again." }, { status: 403 });
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: user._id, role: user.role, name: user.name, email: user.email, image: user.image || "" },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
 
     const response = NextResponse.json({ message: "Token refreshed successfully" }, { status: 200 });
-    
     response.cookies.set("token", newAccessToken, {
       path: "/",
       httpOnly: true,

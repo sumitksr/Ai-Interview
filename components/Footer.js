@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const footerLinks = [
   {
@@ -24,7 +25,11 @@ const footerLinks = [
 ];
 
 export default function Footer() {
+  const pathname = usePathname();
   const year = new Date().getFullYear();
+
+  // Hide on all admin routes
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <footer

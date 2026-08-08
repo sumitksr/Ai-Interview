@@ -29,6 +29,10 @@ export async function POST(req) {
       expiresIn: "30d",
     });
 
+    // Persist refreshToken to DB so admins can terminate sessions
+    user.refreshToken = refreshToken;
+    await user.save();
+
     const response = NextResponse.json({ message: "Login successful", name: user.name, image: user.image || "", role: user.role }, { status: 200 });
     response.cookies.set("token", token, {
         path: "/",
