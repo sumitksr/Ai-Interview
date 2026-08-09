@@ -3,7 +3,7 @@
 ![Architecture](flows/Architecture.png)
 
 ## 🌐 Live Demo
-- **App**: [https://aceai.sumitksr.xyz](https://aceai.sumitksr.xyz)
+- **App**: [https://aceai.live](https://aceai.live)
 
 ---
 
