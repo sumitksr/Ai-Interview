@@ -110,6 +110,11 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Avatar upload state
+  const avatarInputRef = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarAlert, setAvatarAlert] = useState(null); // { type, message }
+
   // Edit profile state
   const [editName, setEditName] = useState("");
   const [editLoading, setEditLoading] = useState(false);
@@ -148,6 +153,41 @@ export default function ProfilePage() {
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  async function handleAvatarChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side guard
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) {
+      setAvatarAlert({ type: "error", message: "Only JPEG, PNG, WebP, or GIF images are allowed." });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarAlert({ type: "error", message: "Image must be smaller than 5 MB." });
+      return;
+    }
+
+    setAvatarUploading(true);
+    setAvatarAlert(null);
+    try {
+      const fd = new FormData();
+      fd.append("avatar", file);
+      const res = await fetch("/api/v1/user/avatar", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) { setAvatarAlert({ type: "error", message: data.error }); return; }
+      setProfile((p) => ({ ...p, image: data.image }));
+      setUserInfo((u) => ({ ...u, image: data.image }));
+      setAvatarAlert({ type: "success", message: "Profile photo updated!" });
+    } catch {
+      setAvatarAlert({ type: "error", message: "Upload failed. Please try again." });
+    } finally {
+      setAvatarUploading(false);
+      // reset so same file can be re-selected
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
 
   async function handleSaveProfile(e) {
     e.preventDefault();
@@ -239,15 +279,71 @@ export default function ProfilePage() {
     <div className="page-shell mx-auto max-w-3xl px-5 py-12 sm:px-8">
       {/* Header */}
       <div className="mb-10 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-        {/* Avatar */}
-        <div
-          className="relative w-24 h-24 rounded-full flex items-center justify-center text-4xl font-black overflow-hidden ring-4 ring-white/10 shadow-xl flex-shrink-0"
-          style={profile.image ? {} : avatarStyle}
-        >
-          {profile.image ? (
-            <img src={profile.image} alt={profile.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-          ) : (
-            <span style={{ color: avatarStyle.color }}>{profile.name?.charAt(0)?.toUpperCase() ?? "?"}</span>
+        {/* Avatar with hover-edit */}
+        <div className="flex flex-col items-center gap-2 flex-shrink-0">
+          {/* Hidden file input */}
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={handleAvatarChange}
+            disabled={avatarUploading}
+          />
+
+          {/* Avatar circle */}
+          <button
+            type="button"
+            onClick={() => !avatarUploading && avatarInputRef.current?.click()}
+            disabled={avatarUploading}
+            title="Change profile photo"
+            className="group relative w-24 h-24 rounded-full flex-shrink-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent)]/60"
+            style={{ cursor: avatarUploading ? "wait" : "pointer" }}
+          >
+            {/* Photo / letter */}
+            <div
+              className="w-full h-full rounded-full flex items-center justify-center text-4xl font-black overflow-hidden ring-4 ring-white/10 shadow-xl transition-all duration-300 group-hover:ring-[var(--accent)]/60"
+              style={profile.image ? {} : avatarStyle}
+            >
+              {profile.image ? (
+                <img src={profile.image} alt={profile.name} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+              ) : (
+                <span style={{ color: avatarStyle.color }}>{profile.name?.charAt(0)?.toUpperCase() ?? "?"}</span>
+              )}
+            </div>
+
+            {/* Hover overlay */}
+            <div className="absolute inset-0 rounded-full flex flex-col items-center justify-center gap-1 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 backdrop-blur-[2px]">
+              {avatarUploading ? (
+                <div className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : (
+                <>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                  </svg>
+                  <span className="text-white text-[10px] font-semibold tracking-wide">EDIT</span>
+                </>
+              )}
+            </div>
+          </button>
+
+          {/* Inline alert under avatar */}
+          {avatarAlert && (
+            <div
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg border text-center max-w-[180px] transition-all ${
+                avatarAlert.type === "success"
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                  : "bg-red-500/10 border-red-500/30 text-red-400"
+              }`}
+            >
+              {avatarAlert.message}
+              <button
+                onClick={() => setAvatarAlert(null)}
+                className="ml-2 opacity-60 hover:opacity-100 transition-opacity"
+                aria-label="Dismiss"
+              >✕</button>
+            </div>
           )}
         </div>
 

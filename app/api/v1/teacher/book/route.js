@@ -244,7 +244,7 @@ export async function POST(req) {
 
     // ── 9. Send emails (non-blocking) ─────────────────────────────────────────
     // Emails link to our secure /meet/:bookid redirect (NOT the raw Google Meet URL)
-    const meetingLink = `https://aceai.sumitksr.xyz/meet/${bookid}`;
+    const meetingLink = `${process.env.NEXTAUTH_URL}/meet/${bookid}`;
 
     const dateLabel = targetDate.toLocaleDateString("en-IN", {
       weekday: "long",

@@ -111,7 +111,7 @@ export async function PATCH(req) {
 
       // Use the real Google Meet link stored in the booking (generated at booking time)
       // Fall back to our secure redirect URL if meetingLink is somehow empty
-      const meetingLink = booking.meetingLink || `${process.env.NEXTAUTH_URL || "https://aceai.sumitksr.xyz"}/meet/${booking.bookid || booking._id.toString()}`;
+      const meetingLink = booking.meetingLink || `${process.env.NEXTAUTH_URL}/meet/${booking.bookid || booking._id.toString()}`;
 
       // Build ISO datetime strings for the Google Calendar link (IST = UTC+05:30)
       const effectiveDate = parsedDate || new Date(booking.scheduledDate);

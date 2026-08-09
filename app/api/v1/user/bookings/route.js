@@ -37,7 +37,7 @@ export async function GET() {
       endTime: b.endTime,
       // Use our /meet/:bookid redirect URL — never expose raw Google Meet link
       meetLink: b.bookid
-        ? `${process.env.NEXTAUTH_URL || "https://aceai.sumitksr.xyz"}/meet/${b.bookid}`
+        ? `${process.env.NEXTAUTH_URL}/meet/${b.bookid}`
         : null,
       hasMeetLink: !!b.meetingLink, // tells client if the real gmeet link exists
       teacher: b.teacher
