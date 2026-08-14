@@ -173,6 +173,26 @@ export default async function MeetPage({ params }) {
                 {openAt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}
               </p>
             </div>
+
+            {isStudent && (
+              <div className="mb-5 p-5 rounded-2xl bg-gradient-to-br from-teal-500/10 to-cyan-500/10 border border-teal-500/20">
+                <div className="w-12 h-12 rounded-xl bg-teal-500/15 border border-teal-500/25 flex items-center justify-center mx-auto mb-3 text-2xl">
+                  🤖
+                </div>
+                <p className="text-white font-bold text-sm mb-1">Warm up with an AI Interview!</p>
+                <p className="text-gray-400 text-xs leading-relaxed mb-4">
+                  Practice with our AI interviewer while you wait. Get personalized questions based on your resume.
+                </p>
+                <a
+                  href="/interview/setup"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-sm hover:from-teal-400 hover:to-cyan-400 transition-all shadow-lg shadow-teal-500/20 hover:shadow-teal-500/30 hover:scale-[1.02]"
+                >
+                  Take AI Interview
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </a>
+              </div>
+            )}
+
             <a
               href="/dashboard"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400 font-semibold text-sm hover:bg-teal-500/15 transition-colors"
