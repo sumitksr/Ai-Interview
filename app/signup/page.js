@@ -66,7 +66,7 @@ export default function Signup() {
       setPendingEmail(email);
       setPendingFormData({ name, email, targetRole, password }); // save for resend
       setOtp(["", "", "", "", "", ""]);
-      setResendCooldown(30);
+      setResendCooldown(15);
       setStep(2);
     } catch {
       setError("An error occurred. Please try again.");
@@ -126,7 +126,7 @@ export default function Signup() {
         setError(data.error || "Failed to resend OTP.");
       } else {
         setOtp(["", "", "", "", "", ""]);
-        setResendCooldown(30);
+        setResendCooldown(15);
         setResendSuccess(true);
         // Focus first OTP box
         otpRefs.current[0]?.focus();

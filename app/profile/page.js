@@ -219,7 +219,7 @@ export default function ProfilePage() {
       const data = await res.json();
       if (!res.ok) { setPwAlert({ type: "error", message: data.error }); setPwStep("idle"); return; }
       setPwStep("otp");
-      setCooldown(60);
+      setCooldown(15);
       setPwAlert({ type: "info", message: `OTP sent to ${profile.email}. Valid for 10 minutes.` });
     } catch {
       setPwAlert({ type: "error", message: "Failed to send OTP. Try again." });

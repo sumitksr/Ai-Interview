@@ -54,11 +54,11 @@ export async function POST(req) {
       );
     }
 
-    // ── Rate-limit: 30-second cooldown between resends ────────────────────────
+    // ── Rate-limit: 15-second cooldown between resends ────────────────────────
     const existing = teacherSignupOtpStore.get(normalizedEmail);
-    if (existing && Date.now() - (existing.sentAt || 0) < 30_000) {
+    if (existing && Date.now() - (existing.sentAt || 0) < 15_000) {
       return NextResponse.json(
-        { error: "Please wait 30 seconds before requesting another OTP." },
+        { error: "Please wait 15 seconds before requesting another OTP." },
         { status: 429 }
       );
     }

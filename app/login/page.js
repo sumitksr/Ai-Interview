@@ -93,7 +93,7 @@ function ForgotPasswordModal({ onClose }) {
         return;
       }
       setStep("otp");
-      setCooldown(60);
+      setCooldown(15);
       setAlert({ type: "info", message: `OTP sent to ${email.trim()}. Valid for 10 minutes.` });
     } catch {
       setAlert({ type: "error", message: "Failed to send OTP. Please try again." });
@@ -114,7 +114,7 @@ function ForgotPasswordModal({ onClose }) {
       });
       const data = await res.json();
       if (!res.ok) { setAlert({ type: "error", message: data.error }); return; }
-      setCooldown(60);
+      setCooldown(15);
       setAlert({ type: "info", message: "A new OTP has been sent to your email." });
     } catch {
       setAlert({ type: "error", message: "Failed to resend OTP." });

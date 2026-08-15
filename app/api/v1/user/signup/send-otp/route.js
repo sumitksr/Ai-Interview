@@ -39,11 +39,11 @@ export async function POST(req) {
       );
     }
 
-    // ── Rate-limit: don't resend too quickly (30-second cooldown) ────────────
+    // ── Rate-limit: don't resend too quickly (15-second cooldown) ────────────
     const existing = signupOtpStore.get(normalizedEmail);
-    if (existing && Date.now() - (existing.sentAt || 0) < 30_000) {
+    if (existing && Date.now() - (existing.sentAt || 0) < 15_000) {
       return NextResponse.json(
-        { error: "Please wait 30 seconds before requesting another OTP." },
+        { error: "Please wait 15 seconds before requesting another OTP." },
         { status: 429 }
       );
     }

@@ -14,8 +14,10 @@ export default function TeacherSignup() {
   // Step 1 = signup form, Step 2 = OTP verification
   const [step, setStep] = useState(1);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [pendingFormData, setPendingFormData] = useState(null);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState(false);
   const otpRefs = useRef([]);
 
   // Countdown timer for resend button
@@ -60,8 +62,9 @@ export default function TeacherSignup() {
       }
 
       setPendingEmail(email);
+      setPendingFormData({ name, email, username, fees, password });
       setOtp(["", "", "", "", "", ""]);
-      setResendCooldown(30);
+      setResendCooldown(15);
       setStep(2);
     } catch {
       setError("An error occurred. Please try again.");
@@ -104,13 +107,31 @@ export default function TeacherSignup() {
     }
   }
 
-  // ── Resend: go back to step 1 ─────────────────────────────────────────────
-  function handleResend() {
-    if (resendCooldown > 0) return;
+  // ── Resend: call API again without leaving the OTP page ──────────────────
+  async function handleResend() {
+    if (resendCooldown > 0 || !pendingFormData) return;
+    setLoading(true);
+    setResendSuccess(false);
     setError("");
-    setStep(1);
-    setPendingEmail("");
-    setOtp(["", "", "", "", "", ""]);
+    try {
+      const res = await fetch("/api/v1/user/signup/teacher/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pendingFormData),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Failed to resend OTP.");
+      } else {
+        setResendCooldown(15);
+        setResendSuccess(true);
+        setOtp(["", "", "", "", "", ""]);
+      }
+    } catch {
+      setError("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // OTP box keyboard navigation
@@ -363,6 +384,11 @@ export default function TeacherSignup() {
               </button>
             </form>
 
+            {/* Resend success message */}
+            {resendSuccess && (
+              <p className="mt-4 text-center text-sm text-emerald-400">A new OTP has been sent to your email.</p>
+            )}
+
             <p className="muted-text mt-5 text-center text-sm">
               Didn&apos;t receive the code?{" "}
               {resendCooldown > 0 ? (
@@ -375,9 +401,10 @@ export default function TeacherSignup() {
               ) : (
                 <button
                   onClick={handleResend}
-                  className="font-semibold text-cyan hover:underline"
+                  disabled={loading}
+                  className="font-semibold text-cyan hover:underline disabled:opacity-50"
                 >
-                  Go back &amp; resend
+                  {loading ? "Sending…" : "Resend OTP"}
                 </button>
               )}
             </p>
