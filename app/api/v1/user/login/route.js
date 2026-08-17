@@ -15,6 +15,13 @@ export async function POST(req) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
+    if (!user.password) {
+      return NextResponse.json(
+        { error: "No password set for this account. Please log in using Google/GitHub,and set on profile page" },
+        { status: 400 }
+      );
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
