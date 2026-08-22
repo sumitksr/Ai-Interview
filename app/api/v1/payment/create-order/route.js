@@ -22,6 +22,19 @@ export async function POST(req) {
 
     await connectDB();
 
+    // ── Email verification gate ───────────────────────────────────────────────
+    const { User } = await import("@/imports");
+    const payingUser = await User.findById(authUser.id).select("isVerified");
+    if (!payingUser?.isVerified) {
+      return NextResponse.json(
+        {
+          error: "Please verify your email before making a payment.",
+          emailNotVerified: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const { teacherId } = await req.json();
 
     if (!teacherId) {

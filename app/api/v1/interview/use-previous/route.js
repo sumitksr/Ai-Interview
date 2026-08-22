@@ -12,13 +12,27 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    await connectDB();
+
+    // ── Email verification gate ───────────────────────────────────────────────
+    const { User } = await import("@/imports");
+    const interviewUser = await User.findById(authUser.id).select("isVerified");
+    if (!interviewUser?.isVerified) {
+      return NextResponse.json(
+        {
+          error: "Please verify your email before starting an interview.",
+          emailNotVerified: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const { targetRole, experienceLevel, focus, questionCount = "5" } = await req.json();
 
     if (!targetRole) {
       return NextResponse.json({ error: "targetRole is required" }, { status: 400 });
     }
 
-    await connectDB();
 
     // Fetch the user's last interview that has a stored resume text
     const userData = await UserData.findOne({ user: authUser.id }).select("interviewHistory");

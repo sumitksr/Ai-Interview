@@ -344,8 +344,30 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
+  const [toast, setToast] = useState(null);
   const { login } = useAuth();
   const callbackUrl = searchParams.get("callbackUrl");
+
+  // Handle verification error redirects (?verifyError=expired etc.)
+  useEffect(() => {
+    const verifyError = searchParams.get("verifyError");
+    if (verifyError) {
+      const messages = {
+        expired: "Verification link has expired. Please log in and request a new one.",
+        missing: "Invalid verification link.",
+        error: "Something went wrong during verification. Please try again.",
+      };
+      setToast({ type: "error", message: messages[verifyError] || messages.error });
+      window.history.replaceState({}, "", "/login");
+    }
+  }, [searchParams]);
+
+  // Auto-dismiss toast after 6 seconds
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   function getRedirectTarget(role) {
     if (callbackUrl && callbackUrl.startsWith("/")) {
@@ -387,7 +409,7 @@ export default function Login() {
       }
 
       const data = await res.json();
-      login({ name: data.name, image: data.image, role: data.role });
+      login({ name: data.name, image: data.image, role: data.role, isVerified: !data.needsEmailVerification });
       
       router.push(getRedirectTarget(data.role));
     } catch (err) {
@@ -399,6 +421,27 @@ export default function Login() {
 
   return (
     <>
+      {/* Verification Toast */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md ${
+            toast.type === "success"
+              ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+              : "bg-red-500/15 border-red-500/30 text-red-300"
+          }`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span className="text-sm font-semibold">{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100 transition-opacity">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Forgot Password Modal */}
       {showForgot && <ForgotPasswordModal onClose={() => setShowForgot(false)} />}
 

@@ -26,6 +26,20 @@ export async function POST(req) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // ── Email verification gate ───────────────────────────────────────────────
+    await connectDB();
+    const { User } = await import("@/imports");
+    const interviewUser = await User.findById(authUser.id).select("isVerified");
+    if (!interviewUser?.isVerified) {
+      return NextResponse.json(
+        {
+          error: "Please verify your email before starting an interview.",
+          emailNotVerified: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const formData = await req.formData();
     const targetRole = formData.get("targetRole");
     const experienceLevel = formData.get("experienceLevel");

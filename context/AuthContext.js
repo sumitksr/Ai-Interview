@@ -7,10 +7,14 @@ const AuthContext = createContext();
 export function AuthProvider({ children, initialLoginState, initialUserInfo }) {
   const [isLoggedIn, setIsLoggedIn] = useState(initialLoginState);
   const [userInfo, setUserInfo] = useState(initialUserInfo);
+  const [isVerified, setIsVerified] = useState(
+    initialUserInfo?.isVerified ?? true
+  );
 
   useEffect(() => {
     setIsLoggedIn(initialLoginState);
     setUserInfo(initialUserInfo);
+    setIsVerified(initialUserInfo?.isVerified ?? true);
   }, [initialLoginState, initialUserInfo]);
 
   useEffect(() => {
@@ -23,6 +27,8 @@ export function AuthProvider({ children, initialLoginState, initialUserInfo }) {
           if (data.ok) {
             setIsLoggedIn(true);
             setUserInfo(data.userInfo || { name: data.name, image: data.image, role: data.role });
+            // OAuth users are always verified
+            setIsVerified(data.userInfo?.isVerified ?? true);
           }
         }
       } catch (err) {
@@ -98,12 +104,16 @@ export function AuthProvider({ children, initialLoginState, initialUserInfo }) {
 
   const login = (info) => {
     setIsLoggedIn(true);
-    if (info) setUserInfo(info);
+    if (info) {
+      setUserInfo(info);
+      setIsVerified(info.isVerified ?? true);
+    }
   };
   
   const logout = async () => {
     setIsLoggedIn(false);
     setUserInfo(null);
+    setIsVerified(true); // reset
     document.cookie = "isLoggedIn=; max-age=0; path=/";
     document.cookie = "userInfo=; max-age=0; path=/";
     try {
@@ -116,7 +126,7 @@ export function AuthProvider({ children, initialLoginState, initialUserInfo }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, userInfo, login, logout, setIsLoggedIn, setUserInfo }}>
+    <AuthContext.Provider value={{ isLoggedIn, userInfo, isVerified, login, logout, setIsLoggedIn, setUserInfo, setIsVerified }}>
       {children}
     </AuthContext.Provider>
   );

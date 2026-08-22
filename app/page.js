@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 /* ─── Static data ────────────────────────────────────────────────── */
 const FEATURES = [
@@ -102,10 +103,65 @@ const TESTIMONIALS = [
 ];
 
 export default function Home() {
-  
+  const searchParams = useSearchParams();
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (searchParams.get("verified") === "true") {
+      setToast({ type: "success", message: "Email verified successfully! You now have full access." });
+      // Clean up the URL
+      window.history.replaceState({}, "", "/");
+    } else if (searchParams.get("verifyError")) {
+      const errorType = searchParams.get("verifyError");
+      const messages = {
+        expired: "Verification link has expired. Please request a new one from your dashboard.",
+        missing: "Invalid verification link.",
+        error: "Something went wrong during verification. Please try again.",
+      };
+      setToast({ type: "error", message: messages[errorType] || messages.error });
+      window.history.replaceState({}, "", "/");
+    }
+  }, [searchParams]);
+
+  // Auto-dismiss toast after 6 seconds
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   return (
     <div className="page-shell">
+
+      {/* ── Verification Toast ── */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div
+            className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border backdrop-blur-md ${
+              toast.type === "success"
+                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                : "bg-red-500/15 border-red-500/30 text-red-300"
+            }`}
+          >
+            {toast.type === "success" ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+            )}
+            <span className="text-sm font-semibold">{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100 transition-opacity">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           HERO

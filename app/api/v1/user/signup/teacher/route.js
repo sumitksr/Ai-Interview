@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { Teacher, User, connectDB } from "@/imports";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
+import { sendVerificationEmail } from "@/lib/sendVerificationEmail";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "fallback_secret_key_for_development";
@@ -10,80 +13,34 @@ const REFRESH_TOKEN_SECRET =
   "fallback_refresh_secret_key_for_development";
 
 /**
- * Shared reference to the teacher signup OTP store (set by send-otp route).
- * Keyed by normalized email → { name, email, username, fees, hashedPassword, otp, expiresAt, attempts }
+ * POST /api/v1/user/signup/teacher
+ *
+ * Accepts { name, email, username, fees, password }
+ * Creates User + Teacher docs immediately (no OTP).
+ * Sends a verification email with a magic link (3-day expiry).
+ * Returns auth cookies so the teacher is logged in right away.
  */
-const teacherSignupOtpStore =
-  global._teacherSignupOtpStore ||
-  (global._teacherSignupOtpStore = new Map());
-
-const MAX_ATTEMPTS = 5;
-
-// POST /api/v1/user/signup/teacher
-// Accepts { email, otp }
-// Verifies OTP → creates User + Teacher docs in DB → returns auth cookies.
 export async function POST(req) {
   try {
-    const { email, otp } = await req.json();
+    const { name, email, username, fees, password } = await req.json();
 
-    if (!email || !otp) {
+    // ── Basic validation ──────────────────────────────────────────────────────
+    if (!name || !email || !username || !password) {
       return NextResponse.json(
-        { error: "Email and OTP are required." },
+        { error: "Name, email, username, and password are required." },
         { status: 400 }
       );
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const record = teacherSignupOtpStore.get(normalizedEmail);
 
-    // ── OTP not found ─────────────────────────────────────────────────────────
-    if (!record) {
-      return NextResponse.json(
-        { error: "No pending verification found. Please request a new OTP." },
-        { status: 400 }
-      );
-    }
-
-    // ── OTP expired ───────────────────────────────────────────────────────────
-    if (Date.now() > record.expiresAt) {
-      teacherSignupOtpStore.delete(normalizedEmail);
-      return NextResponse.json(
-        { error: "OTP has expired. Please request a new one." },
-        { status: 400 }
-      );
-    }
-
-    // ── Too many incorrect attempts ───────────────────────────────────────────
-    if (record.attempts >= MAX_ATTEMPTS) {
-      teacherSignupOtpStore.delete(normalizedEmail);
-      return NextResponse.json(
-        { error: "Too many incorrect attempts. Please request a new OTP." },
-        { status: 429 }
-      );
-    }
-
-    // ── Wrong OTP ─────────────────────────────────────────────────────────────
-    if (record.otp !== otp.toString().trim()) {
-      record.attempts += 1;
-      const remaining = MAX_ATTEMPTS - record.attempts;
-      return NextResponse.json(
-        {
-          error:
-            remaining > 0
-              ? `Incorrect OTP. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`
-              : "Too many incorrect attempts. Please request a new OTP.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // ── OTP valid — create User + Teacher docs ────────────────────────────────
+    // ── Check if email or username is already taken ───────────────────────────
     await connectDB();
 
-    // Race-condition guard: re-check uniqueness right before writing
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({
+      email: { $regex: new RegExp(`^${normalizedEmail}$`, "i") },
+    });
     if (existingUser) {
-      teacherSignupOtpStore.delete(normalizedEmail);
       return NextResponse.json(
         { error: "An account with this email already exists. Please sign in." },
         { status: 400 }
@@ -91,42 +48,65 @@ export async function POST(req) {
     }
 
     const existingTeacher = await Teacher.findOne({
-      username: record.username,
+      username: username.trim(),
     });
     if (existingTeacher) {
-      teacherSignupOtpStore.delete(normalizedEmail);
       return NextResponse.json(
-        { error: "Username already taken. Please go back and choose another." },
+        { error: "Username already taken. Please choose a different one." },
         { status: 400 }
       );
     }
 
+    // ── Hash password ─────────────────────────────────────────────────────────
+    const saltRounds = Number(process.env.N) || 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // ── Generate verification token (3-day expiry) ────────────────────────────
+    const verificationToken = crypto.randomUUID();
+    const verificationExpires = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+    // ── Create User doc ───────────────────────────────────────────────────────
     const newUser = new User({
-      name: record.name,
+      name,
       email: normalizedEmail,
-      password: record.hashedPassword,
+      password: hashedPassword,
       role: "teacher",
+      isVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
     });
 
     const savedUser = await newUser.save();
 
+    // ── Create Teacher doc ────────────────────────────────────────────────────
     const newTeacher = new Teacher({
       user: savedUser._id,
-      username: record.username,
-      fees: record.fees,
+      username: username.trim(),
+      fees: Number(fees) || 0,
     });
 
     await newTeacher.save();
 
-    // Clean up OTP record immediately after use
-    teacherSignupOtpStore.delete(normalizedEmail);
-
-    // Await so the serverless function doesn't terminate before the email sends
-    await sendWelcomeEmail(savedUser.email, savedUser.name);
+    // ── Send welcome + verification emails (non-blocking) ─────────────────────
+    sendWelcomeEmail(savedUser.email, savedUser.name).catch((e) =>
+      console.error("sendWelcomeEmail error:", e)
+    );
+    sendVerificationEmail(
+      savedUser.email,
+      savedUser.name,
+      verificationToken
+    ).catch((e) => console.error("sendVerificationEmail error:", e));
 
     // ── Issue auth tokens ─────────────────────────────────────────────────────
     const token = jwt.sign(
-      { id: savedUser._id, role: savedUser.role },
+      {
+        id: savedUser._id,
+        role: savedUser.role,
+        email: savedUser.email,
+        name: savedUser.name,
+        image: savedUser.image || "",
+        isVerified: false,
+      },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -137,12 +117,17 @@ export async function POST(req) {
       { expiresIn: "30d" }
     );
 
+    // Persist refreshToken to DB
+    savedUser.refreshToken = refreshToken;
+    await savedUser.save();
+
     const response = NextResponse.json(
       {
         message: "Teacher Signup successful",
         name: savedUser.name,
         image: savedUser.image || "",
         role: savedUser.role,
+        needsEmailVerification: true,
       },
       { status: 201 }
     );
@@ -167,6 +152,7 @@ export async function POST(req) {
         name: savedUser.name,
         image: savedUser.image || "",
         role: savedUser.role,
+        isVerified: false,
       }),
       { path: "/", maxAge: 60 * 60 * 24 }
     );

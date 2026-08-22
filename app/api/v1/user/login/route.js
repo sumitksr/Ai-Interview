@@ -27,7 +27,7 @@ export async function POST(req) {
       return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role, email: user.email, name: user.name, image: user.image || "" }, JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, role: user.role, email: user.email, name: user.name, image: user.image || "", isVerified: user.isVerified ?? false }, JWT_SECRET, {
       expiresIn: "1d",
     });
 
@@ -40,7 +40,7 @@ export async function POST(req) {
     user.refreshToken = refreshToken;
     await user.save();
 
-    const response = NextResponse.json({ message: "Login successful", name: user.name, image: user.image || "", role: user.role }, { status: 200 });
+    const response = NextResponse.json({ message: "Login successful", name: user.name, image: user.image || "", role: user.role, needsEmailVerification: !(user.isVerified ?? false) }, { status: 200 });
     response.cookies.set("token", token, {
         path: "/",
         httpOnly: true,
@@ -55,7 +55,7 @@ export async function POST(req) {
         path: "/",
         maxAge: 60 * 60 * 24, 
       });
-    response.cookies.set("userInfo", JSON.stringify({ name: user.name, image: user.image || "", role: user.role }), {
+    response.cookies.set("userInfo", JSON.stringify({ name: user.name, image: user.image || "", role: user.role, isVerified: user.isVerified ?? false }), {
         path: "/",
         maxAge: 60 * 60 * 24, 
       });

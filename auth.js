@@ -52,6 +52,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               googleId: profile.sub,
               image: profile.picture,
               role: "user",
+              isVerified: true,
             });
             await dbUser.save();
             sendWelcomeEmail(dbUser.email, dbUser.name).catch((e) => console.error("sendWelcomeEmail error:", e));
@@ -59,6 +60,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             let changed = false;
             if (!dbUser.googleId) { dbUser.googleId = profile.sub; changed = true; }
             if (!dbUser.image && profile.picture) { dbUser.image = profile.picture; changed = true; }
+            if (!dbUser.isVerified) { dbUser.isVerified = true; changed = true; }
             if (changed) await dbUser.save();
           }
         }
@@ -80,6 +82,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               githubId,
               image: profile.avatar_url,
               role: "user",
+              isVerified: true,
             });
             await dbUser.save();
             sendWelcomeEmail(dbUser.email, dbUser.name).catch((e) => console.error("sendWelcomeEmail error:", e));
@@ -87,6 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             let changed = false;
             if (!dbUser.githubId) { dbUser.githubId = githubId; changed = true; }
             if (!dbUser.image && profile.avatar_url) { dbUser.image = profile.avatar_url; changed = true; }
+            if (!dbUser.isVerified) { dbUser.isVerified = true; changed = true; }
             if (changed) await dbUser.save();
           }
         }
@@ -96,6 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           user.dbId = dbUser._id.toString();
           user.role = dbUser.role;
           user.image = dbUser.image || user.image;
+          user.isVerified = dbUser.isVerified ?? true;
           user.name = dbUser.name || user.name;
 
           try {
@@ -147,6 +152,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               name: dbUser.name,
               image: dbUser.image || "",
               role: dbUser.role,
+              isVerified: dbUser.isVerified ?? true,
             }), {
               path: "/",
               maxAge: 60 * 60 * 24,
@@ -172,6 +178,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = user.role;
         token.image = user.image;
         token.name = user.name;
+        token.isVerified = user.isVerified;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
       }
@@ -187,6 +194,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role;
         session.user.image = token.image;
         session.user.name = token.name;
+        session.user.isVerified = token.isVerified;
         session.accessToken = token.accessToken;
         session.refreshToken = token.refreshToken;
       }

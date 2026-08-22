@@ -1,7 +1,30 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+
+// ── Toast ───────────────────────────────────────────────────────────
+function Toast({ toast, onClose, onResend }) {
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(onClose, 8000);
+    return () => clearTimeout(t);
+  }, [toast, onClose]);
+  if (!toast) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-[200] flex items-start gap-3 px-5 py-4 rounded-2xl border shadow-2xl backdrop-blur-xl max-w-sm bg-amber-500/15 border-amber-500/40 text-amber-300">
+      <span className="text-lg leading-none mt-0.5">✉️</span>
+      <div className="flex-1">
+        <p className="text-sm font-semibold leading-snug">{toast.message}</p>
+        <button onClick={onResend} disabled={toast.sent}
+          className="mt-2 text-xs font-bold underline underline-offset-2 opacity-80 hover:opacity-100 disabled:opacity-50">
+          {toast.sent ? "✓ Email sent!" : "Resend verification email"}
+        </button>
+      </div>
+      <button onClick={onClose} className="opacity-60 hover:opacity-100 transition-opacity text-lg">✕</button>
+    </div>
+  );
+}
 
 export default function InterviewSetup() {
   const router = useRouter();
@@ -9,6 +32,15 @@ export default function InterviewSetup() {
   const [hasPrevResume, setHasPrevResume] = useState(false);
   const [usePrevResume, setUsePrevResume] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
+
+  const handleCloseToast = useCallback(() => setToast(null), []);
+  async function handleResendVerification() {
+    try {
+      await fetch("/api/v1/user/resend-verification", { method: "POST" });
+      setToast(prev => prev ? { ...prev, sent: true } : prev);
+    } catch {}
+  }
 
   const [formData, setFormData] = useState({
     targetRole: "",
@@ -92,6 +124,11 @@ export default function InterviewSetup() {
 
         if (!res.ok) {
           const result = await res.json();
+          if (res.status === 403 && result.emailNotVerified) {
+            setToast({ message: "Verify your email to start an interview.", sent: false });
+            setLoading(false);
+            return;
+          }
           throw new Error(
             result.error ||
               "Could not load previous resume. Please upload a new one."
@@ -134,6 +171,11 @@ export default function InterviewSetup() {
 
       if (!res.ok) {
         const result = await res.json();
+        if (res.status === 403 && result.emailNotVerified) {
+          setToast({ message: "Verify your email to start an interview.", sent: false });
+          setLoading(false);
+          return;
+        }
         throw new Error(result.error || "Failed to generate questions");
       }
 
@@ -163,9 +205,10 @@ export default function InterviewSetup() {
       </div>
     );
   }
-
   return (
-    <div className="page-shell mx-auto max-w-3xl px-5 py-12 sm:px-8">
+    <>
+      <Toast toast={toast} onClose={handleCloseToast} onResend={handleResendVerification} />
+      <div className="page-shell mx-auto max-w-3xl px-5 py-12 sm:px-8">
       <div className="text-center mb-10">
         <h1 className="title-text text-4xl font-black tracking-tight mb-3">Setup New Interview</h1>
         <p className="muted-text text-lg">Provide some context so our AI can generate tailored questions.</p>
@@ -330,5 +373,6 @@ export default function InterviewSetup() {
         </form>
       </div>
     </div>
+    </>
   );
 }

@@ -56,21 +56,50 @@ function StarRating({ rating, size = 14 }) {
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
-function Toast({ toast, onClose }) {
+function Toast({ toast, onClose, onResend, cooldown }) {
+  // Regular toasts auto-dismiss; verify toasts stay until closed
   useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(onClose, 4500);
+    if (!toast || toast.type === "warn") return;
+    const t = setTimeout(onClose, 5000);
     return () => clearTimeout(t);
   }, [toast, onClose]);
+
   if (!toast) return null;
+
+  if (toast.type === "warn") {
+    // ─ Amber email-verify toast (same as interview/setup page) ─────────
+    return (
+      <div className="fixed bottom-6 right-6 z-[200] flex items-start gap-3 px-5 py-4 rounded-2xl border shadow-2xl backdrop-blur-xl max-w-sm bg-amber-500/15 border-amber-500/40 text-amber-300">
+        <span className="text-lg leading-none mt-0.5">✉️</span>
+        <div className="flex-1">
+          <p className="text-sm font-semibold leading-snug">{toast.message}</p>
+          <button
+            onClick={onResend}
+            disabled={cooldown > 0}
+            className="mt-2 text-xs font-bold underline underline-offset-2 opacity-80 hover:opacity-100 disabled:no-underline disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {toast.sent
+              ? "✓ Email sent!"
+              : cooldown > 0
+              ? `Resend in ${cooldown}s`
+              : "Resend verification email"}
+          </button>
+        </div>
+        <button onClick={onClose} className="opacity-60 hover:opacity-100 transition-opacity text-lg">✕</button>
+      </div>
+    );
+  }
+
+  // ─ Standard success / error / info toast ───────────────────────
   const s = {
     success: "bg-emerald-500/15 border-emerald-500/40 text-emerald-400",
     error:   "bg-red-500/15 border-red-500/40 text-red-400",
     info:    "bg-[var(--cyan)]/10 border-[var(--cyan)]/30 text-[var(--cyan)]",
   };
+  const emoji = { success: "✅", error: "❌", info: "ℹ️" };
   return (
-    <div className={`fixed bottom-6 right-6 z-[200] flex items-start gap-3 px-5 py-4 rounded-2xl border shadow-2xl backdrop-blur-xl max-w-sm ${s[toast.type]}`}>
-      <span className="text-lg leading-none mt-0.5">{toast.type === "success" ? "✅" : toast.type === "error" ? "❌" : "ℹ️"}</span>
+    <div className={`fixed bottom-6 right-6 z-[200] flex items-center gap-3 px-5 py-4 rounded-2xl border shadow-2xl backdrop-blur-xl max-w-sm ${s[toast.type]}`}>
+      <span className="text-lg leading-none">{emoji[toast.type]}</span>
       <span className="text-sm font-semibold leading-relaxed flex-1">{toast.message}</span>
       <button onClick={onClose} className="opacity-60 hover:opacity-100 transition-opacity text-lg">✕</button>
     </div>
@@ -110,7 +139,15 @@ function BookingModal({ teacher, onClose, onBooked }) {
           body: JSON.stringify({ teacherId: teacher._id, date: selectedDate.toISOString(), slotId: selectedSlot._id }),
         });
         const data = await res.json();
-        if (!res.ok) { onBooked({ type: "error", message: data.error || "Booking failed" }); onClose(); return; }
+        if (!res.ok) {
+          // 403 = email not verified; any other error is generic
+          if (res.status === 403 || data.emailNotVerified) {
+            onBooked({ type: "warn", message: "Please verify your email to book a session." });
+          } else {
+            onBooked({ type: "error", message: data.error || "Booking failed" });
+          }
+          onClose(); return;
+        }
         onBooked({ type: "success", message: "Session booked! Check your dashboard." });
         onClose();
         return;
@@ -124,7 +161,11 @@ function BookingModal({ teacher, onClose, onBooked }) {
       });
       const orderData = await orderRes.json();
       if (!orderRes.ok) {
-        onBooked({ type: "error", message: orderData.error || "Could not initiate payment" });
+        if (orderRes.status === 403 || orderData.emailNotVerified) {
+          onBooked({ type: "warn", message: "Please verify your email to book a session." });
+        } else {
+          onBooked({ type: "error", message: orderData.error || "Could not initiate payment" });
+        }
         onClose();
         return;
       }
@@ -271,12 +312,31 @@ function BookingModal({ teacher, onClose, onBooked }) {
 export default function MentorProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, isVerified } = useAuth();
   const [teacher, setTeacher] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [toast, setToast] = useState(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  async function handleResendVerification() {
+    if (resendCooldown > 0) return;
+    try {
+      const res = await fetch("/api/v1/user/resend-verification", { method: "POST" });
+      if (res.ok) {
+        setToast(prev => prev ? { ...prev, sent: true } : prev);
+        setResendCooldown(60);
+      }
+    } catch {}
+  }
 
   const username = params?.username;
 
@@ -295,8 +355,12 @@ export default function MentorProfilePage() {
 
   const handleBook = useCallback(() => {
     if (!isLoggedIn) { router.push("/login"); return; }
+    if (!isVerified) {
+      setToast({ type: "warn", message: "Please verify your email to book a session." });
+      return;
+    }
     setShowBooking(true);
-  }, [isLoggedIn, router]);
+  }, [isLoggedIn, isVerified, router]);
 
   const handleBooked = useCallback((toastData) => {
     setToast(toastData);
@@ -512,7 +576,7 @@ export default function MentorProfilePage() {
       </div>
 
       {showBooking && <BookingModal teacher={teacher} onClose={() => setShowBooking(false)} onBooked={handleBooked} />}
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={() => setToast(null)} onResend={handleResendVerification} cooldown={resendCooldown} />
     </>
   );
 }

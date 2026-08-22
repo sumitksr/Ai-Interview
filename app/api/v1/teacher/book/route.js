@@ -39,6 +39,18 @@ export async function POST(req) {
 
     await connectDB();
 
+    // ── Email verification gate ───────────────────────────────────────────────
+    const bookingUser = await User.findById(authUser.id).select("isVerified");
+    if (!bookingUser?.isVerified) {
+      return NextResponse.json(
+        {
+          error: "Please verify your email before booking a mentor session.",
+          emailNotVerified: true,
+        },
+        { status: 403 }
+      );
+    }
+
     const {
       teacherId,
       date: dateStr,

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { connectDB, User } from "@/imports";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { sendWelcomeEmail } from "@/lib/sendWelcomeEmail";
+import { sendVerificationEmail } from "@/lib/sendVerificationEmail";
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "fallback_secret_key_for_development";
@@ -10,103 +13,78 @@ const REFRESH_TOKEN_SECRET =
   "fallback_refresh_secret_key_for_development";
 
 /**
- * Shared reference to the signup OTP store (set by send-otp route).
- * Keyed by normalized email → { name, email, targetRole, hashedPassword, otp, expiresAt, attempts }
+ * POST /api/v1/user/signup
+ *
+ * Accepts { name, email, password }
+ * Creates the user account immediately (no OTP).
+ * Sends a verification email with a magic link (3-day expiry).
+ * Returns auth cookies so the user is logged in right away.
  */
-const signupOtpStore =
-  global._signupOtpStore || (global._signupOtpStore = new Map());
-
-const MAX_ATTEMPTS = 5;
-
-// POST /api/v1/user/signup
-// Accepts { email, otp }
-// Verifies OTP → creates user in DB → returns auth cookies.
 export async function POST(req) {
   try {
-    const { email, otp } = await req.json();
+    const { name, email, password } = await req.json();
 
-    if (!email || !otp) {
+    // ── Basic validation ──────────────────────────────────────────────────────
+    if (!name || !email || !password) {
       return NextResponse.json(
-        { error: "Email and OTP are required." },
+        { error: "Name, email, and password are required." },
         { status: 400 }
       );
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const record = signupOtpStore.get(normalizedEmail);
 
-    // ── OTP not found (never sent or already used) ────────────────────────────
-    if (!record) {
-      return NextResponse.json(
-        { error: "No pending verification found. Please request a new OTP." },
-        { status: 400 }
-      );
-    }
-
-    // ── OTP expired ───────────────────────────────────────────────────────────
-    if (Date.now() > record.expiresAt) {
-      signupOtpStore.delete(normalizedEmail);
-      return NextResponse.json(
-        { error: "OTP has expired. Please request a new one." },
-        { status: 400 }
-      );
-    }
-
-    // ── Too many incorrect attempts ───────────────────────────────────────────
-    if (record.attempts >= MAX_ATTEMPTS) {
-      signupOtpStore.delete(normalizedEmail);
-      return NextResponse.json(
-        { error: "Too many incorrect attempts. Please request a new OTP." },
-        { status: 429 }
-      );
-    }
-
-    // ── Wrong OTP ─────────────────────────────────────────────────────────────
-    if (record.otp !== otp.toString().trim()) {
-      record.attempts += 1;
-      const remaining = MAX_ATTEMPTS - record.attempts;
-      return NextResponse.json(
-        {
-          error:
-            remaining > 0
-              ? `Incorrect OTP. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`
-              : "Too many incorrect attempts. Please request a new OTP.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // ── OTP is valid — create the user in DB now ──────────────────────────────
+    // ── Check if email is already registered ──────────────────────────────────
     await connectDB();
-
-    // Double-check the email isn't taken (race-condition guard)
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({
+      email: { $regex: new RegExp(`^${normalizedEmail}$`, "i") },
+    });
     if (existingUser) {
-      signupOtpStore.delete(normalizedEmail);
       return NextResponse.json(
         { error: "An account with this email already exists. Please sign in." },
         { status: 400 }
       );
     }
 
+    // ── Hash password ─────────────────────────────────────────────────────────
+    const saltRounds = Number(process.env.N) || 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // ── Generate verification token (3-day expiry) ────────────────────────────
+    const verificationToken = crypto.randomUUID();
+    const verificationExpires = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
+    // ── Create user in DB immediately ─────────────────────────────────────────
     const newUser = new User({
-      name: record.name,
+      name,
       email: normalizedEmail,
-      password: record.hashedPassword,
+      password: hashedPassword,
       role: "user",
+      isVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
     });
 
     await newUser.save();
 
-    // Clean up OTP record immediately after use
-    signupOtpStore.delete(normalizedEmail);
-
-    // Await so the serverless function doesn't terminate before the email sends
-    await sendWelcomeEmail(newUser.email, newUser.name);
+    // ── Send welcome + verification emails (non-blocking) ─────────────────────
+    sendWelcomeEmail(newUser.email, newUser.name).catch((e) =>
+      console.error("sendWelcomeEmail error:", e)
+    );
+    sendVerificationEmail(newUser.email, newUser.name, verificationToken).catch(
+      (e) => console.error("sendVerificationEmail error:", e)
+    );
 
     // ── Issue auth tokens ─────────────────────────────────────────────────────
     const token = jwt.sign(
-      { id: newUser._id, role: newUser.role },
+      {
+        id: newUser._id,
+        role: newUser.role,
+        email: newUser.email,
+        name: newUser.name,
+        image: newUser.image || "",
+        isVerified: false,
+      },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -117,12 +95,17 @@ export async function POST(req) {
       { expiresIn: "30d" }
     );
 
+    // Persist refreshToken to DB
+    newUser.refreshToken = refreshToken;
+    await newUser.save();
+
     const response = NextResponse.json(
       {
         message: "Signup successful",
         name: newUser.name,
         image: newUser.image || "",
         role: newUser.role,
+        needsEmailVerification: true,
       },
       { status: 201 }
     );
@@ -147,6 +130,7 @@ export async function POST(req) {
         name: newUser.name,
         image: newUser.image || "",
         role: newUser.role,
+        isVerified: false,
       }),
       { path: "/", maxAge: 60 * 60 * 24 }
     );

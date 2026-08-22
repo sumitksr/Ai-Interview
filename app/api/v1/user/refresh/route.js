@@ -21,7 +21,7 @@ export async function POST(req) {
     }
 
     await connectDB();
-    const user = await User.findById(decoded.id).select("_id role refreshToken name email image");
+    const user = await User.findById(decoded.id).select("_id role refreshToken name email image isVerified");
 
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
@@ -35,7 +35,7 @@ export async function POST(req) {
     }
 
     const newAccessToken = jwt.sign(
-      { id: user._id, role: user.role, name: user.name, email: user.email, image: user.image || "" },
+      { id: user._id, role: user.role, name: user.name, email: user.email, image: user.image || "", isVerified: user.isVerified ?? false },
       JWT_SECRET,
       { expiresIn: "1d" }
     );
