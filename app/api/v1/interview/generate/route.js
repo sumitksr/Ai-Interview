@@ -27,17 +27,27 @@ export async function POST(req) {
     }
 
     // ── Email verification gate ───────────────────────────────────────────────
+    // Rule: unverified users get ONE free interview (when history is empty).
+    // After that, they must verify their email to continue.
     await connectDB();
     const { User } = await import("@/imports");
     const interviewUser = await User.findById(authUser.id).select("isVerified");
+
     if (!interviewUser?.isVerified) {
-      return NextResponse.json(
-        {
-          error: "Please verify your email before starting an interview.",
-          emailNotVerified: true,
-        },
-        { status: 403 }
-      );
+      // Check how many interviews this user has already taken
+      const existingData = await UserData.findOne({ user: authUser.id }).select("interviewHistory");
+      const historyCount = existingData?.interviewHistory?.length ?? 0;
+
+      if (historyCount > 0) {
+        return NextResponse.json(
+          {
+            error: "Please verify your email before starting another interview.",
+            emailNotVerified: true,
+          },
+          { status: 403 }
+        );
+      }
+      // historyCount === 0 → allow the first free interview, fall through
     }
 
     const formData = await req.formData();
