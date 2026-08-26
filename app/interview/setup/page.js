@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 function Toast({ toast, onClose, onResend }) {
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(onClose, 8000);
+    const t = setTimeout(onClose, 12000);
     return () => clearTimeout(t);
   }, [toast, onClose]);
   if (!toast) return null;
@@ -33,12 +33,16 @@ export default function InterviewSetup() {
   const [usePrevResume, setUsePrevResume] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
+  const [isVerified, setIsVerified] = useState(true);
+  const [interviewHistoryCount, setInterviewHistoryCount] = useState(0);
+  const [resendSent, setResendSent] = useState(false);
 
   const handleCloseToast = useCallback(() => setToast(null), []);
   async function handleResendVerification() {
     try {
       await fetch("/api/v1/user/resend-verification", { method: "POST" });
       setToast(prev => prev ? { ...prev, sent: true } : prev);
+      setResendSent(true);
     } catch {}
   }
 
@@ -61,14 +65,29 @@ export default function InterviewSetup() {
           return;
         }
         if (res.ok) {
-          const { userData } = await res.json();
+          const { user, userData } = await res.json();
+
+          // Track email verification status
+          setIsVerified(user?.isVerified ?? true);
+
+          const historyCount = userData?.interviewHistory?.length ?? 0;
+          setInterviewHistoryCount(historyCount);
+
           // Check if there is at least one interview with a resume
-          if (userData?.interviewHistory?.length > 0) {
-            const lastInterview = userData.interviewHistory[userData.interviewHistory.length - 1];
+          if (historyCount > 0) {
+            const lastInterview = userData.interviewHistory[historyCount - 1];
             if (lastInterview.resume && lastInterview.resume.length > 0) {
               setHasPrevResume(true);
               setUsePrevResume(true);
             }
+          }
+
+          // If first-time user and not verified, show a soft notification toast
+          if (!user?.isVerified && historyCount === 0) {
+            setToast({
+              message: "Please verify your email. You can take one free interview now, but verification is required afterwards.",
+              sent: false,
+            });
           }
         }
       } catch (err) {
@@ -198,6 +217,9 @@ export default function InterviewSetup() {
     }
   };
 
+  // Block form if not verified AND has already taken at least one interview
+  const isBlocked = !isVerified && interviewHistoryCount > 0;
+
   if (loading) {
     return (
       <div className="page-shell flex justify-center items-center min-h-[60vh]">
@@ -214,7 +236,33 @@ export default function InterviewSetup() {
         <p className="muted-text text-lg">Provide some context so our AI can generate tailored questions.</p>
       </div>
 
-      <div className="bg-[var(--surface)]/60 backdrop-blur-md border border-[var(--border)] rounded-3xl p-8 shadow-xl">
+      {/* ── Blocking Email Verification Banner (shown when unverified + has history) ── */}
+      {isBlocked && (
+        <div className="mb-8 rounded-2xl border border-amber-500/40 bg-amber-500/10 backdrop-blur-md p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center text-2xl">
+            ✉️
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-amber-300 font-bold text-base leading-snug">Email Verification Required</p>
+            <p className="text-amber-200/70 text-sm mt-1 leading-relaxed">
+              You&apos;ve used your free interview. Please verify your email address to continue taking interviews.
+              Check your inbox for the verification link.
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!resendSent) await handleResendVerification();
+            }}
+            disabled={resendSent}
+            className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-sm transition-all duration-200 border border-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          >
+            {resendSent ? "✓ Email Sent!" : "Resend Email"}
+          </button>
+        </div>
+      )}
+
+      {/* ── Form (blurred & non-interactive when blocked) ── */}
+      <div className={`bg-[var(--surface)]/60 backdrop-blur-md border border-[var(--border)] rounded-3xl p-8 shadow-xl transition-all duration-300 ${isBlocked ? "opacity-40 pointer-events-none select-none blur-[1px]" : ""}`}>
         {error && (
           <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
             {error}
