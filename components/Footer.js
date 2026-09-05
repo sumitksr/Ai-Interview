@@ -28,8 +28,8 @@ export default function Footer() {
   const pathname = usePathname();
   const year = new Date().getFullYear();
 
-  // Hide on all admin routes
-  if (pathname.startsWith("/admin")) return null;
+  // Hide on admin and interview routes (app-like pages)
+  if (pathname.startsWith("/admin") || pathname.startsWith("/interview")) return null;
 
   return (
     <footer
